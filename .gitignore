@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+*.egg
+dist/
+build/
+*.so
+*.o
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+*.ipynb_checkpoints/
+
+# Development
+.env
+.DS_Store
+.claude/
+
+# Project-specific
+results/*.json
+results/*.txt
+results/*.png
+designs/*.npz
+*.output
+*.pdf
