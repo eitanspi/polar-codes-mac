@@ -1,22 +1,23 @@
 """
-sim_bemac_class_c.py
-====================
-Reproduce code class C = (0.5, 1) results from Önay ISIT 2013 for BE-MAC
-with L=1 (SC decoder, no list).
+simulate.py — Unified BE-MAC polar code simulation for all code classes.
 
-Run:
+Usage:
     cd to_git
-    python scripts/sim_bemac_class_c.py
+    python scripts/simulate.py --class C --L 1
+    python scripts/simulate.py --class C --L 32
+    python scripts/simulate.py --class B --L 1 --N 1024 4096
+    python scripts/simulate.py --class A --L 32 --hours 2
+    python scripts/simulate.py --class C --L 1 --design mc
 """
 
 import os
 import sys
 import time
 import json
+import argparse
 import warnings
 import numpy as np
 
-# Suppress inf-arithmetic warnings from the decoder's f/g nodes (handled by fallback logic)
 warnings.filterwarnings("ignore", message="invalid value encountered", category=RuntimeWarning)
 from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor
@@ -27,42 +28,41 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from polar.encoder import polar_encode, build_message
 from polar.channels import BEMAC
 from polar.design import design_bemac, make_path
+from polar.design_mc import design_from_file
 from polar.decoder import decode_single
+from polar.decoder_scl import decode_single_list
 
 # ════════════════════════════════════════════════════════════════════
-#  CONFIGURATION
+#  CODE CLASS CONFIGURATIONS
 # ════════════════════════════════════════════════════════════════════
 
-BLOCK_LENGTHS = [10, 12, 14]  # n values → N = 2^n
-RHO_VALUES = np.linspace(0.5, 0.95, 8)
-TOTAL_BUDGET_S = 2.0 * 3600  # 2 hours
-SEED = 42
-CHANNEL = BEMAC()
-BENCHMARK_CODEWORDS = 30  # enough to measure multiprocessing overhead
-BLER_SKIP_THRESHOLD = 0.5  # skip remaining rho values for this N when BLER exceeds this
+CLASS_CONFIGS = {
+    "A": {"Ru_dir": 0.75, "Rv_dir": 0.75, "path_i_frac": 0.375},   # 384/1024, from sweep
+    "B": {"Ru_dir": 0.625, "Rv_dir": 0.875, "path_i_frac": 0.5},   # 512/1024, from sweep
+    "C": {"Ru_dir": 0.5,  "Rv_dir": 1.0,   "path_i_frac": 1.0},    # path_i = N (extreme)
+}
 
-# ════════════════════════════════════════════════════════════════════
-#  OUTPUT
-# ════════════════════════════════════════════════════════════════════
-
-os.makedirs(os.path.join(os.path.dirname(__file__), "..", "results"), exist_ok=True)
-JSON_PATH = os.path.join(os.path.dirname(__file__), "..", "results", "sim_bemac_class_c.json")
+BENCHMARK_CODEWORDS = 30
+BLER_SKIP_THRESHOLD = 0.5
 
 
 def log(msg=""):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
+def resolve_path_i(cfg, N):
+    """Resolve path_i from config fraction: frac * N, rounded to int."""
+    frac = cfg.get("path_i_frac", 1.0)
+    return round(frac * N)
+
+
 # ════════════════════════════════════════════════════════════════════
-#  WORKER FOR MULTIPROCESSING
+#  WORKER
 # ════════════════════════════════════════════════════════════════════
 
 def _sim_one_codeword(args):
-    """
-    Simulate one codeword: encode → channel → decode → check errors.
-    Returns (block_error, u_bit_errors, v_bit_errors).
-    """
-    N, n, ku, kv, Au, Av, frozen_u, frozen_v, b, seed_i = args
+    """Encode → channel → decode → count errors."""
+    N, n, ku, kv, Au, Av, frozen_u, frozen_v, b, L, seed_i = args
     rng = np.random.default_rng(seed_i)
     channel = BEMAC()
 
@@ -76,11 +76,13 @@ def _sim_one_codeword(args):
     y = polar_encode(v.tolist())
     z = channel.sample_batch(np.array(x), np.array(y)).tolist()
 
-    u_dec, v_dec = decode_single(N, z, b, frozen_u, frozen_v, channel)
+    if L == 1:
+        u_dec, v_dec = decode_single(N, z, b, frozen_u, frozen_v, channel, log_domain=True)
+    else:
+        u_dec, v_dec = decode_single_list(N, z, b, frozen_u, frozen_v, channel, log_domain=True, L=L)
 
     ue = sum(1 for p, bit in zip(Au, info_u) if u_dec[p - 1] != bit)
     ve = sum(1 for p, bit in zip(Av, info_v) if v_dec[p - 1] != bit)
-
     return (1 if (ue > 0 or ve > 0) else 0, ue, ve)
 
 
@@ -88,23 +90,22 @@ def _sim_one_codeword(args):
 #  BENCHMARK
 # ════════════════════════════════════════════════════════════════════
 
-def benchmark(n_values, n_workers):
-    """
-    Benchmark wall-clock throughput at each N using the same multiprocessing
-    setup as the real simulation, so time estimates are accurate.
-    """
+def benchmark(n_values, n_workers, cfg, L, seed):
+    """Measure wall-clock ms/codeword with multiprocessing overhead."""
     timings = {}
-
     for n in n_values:
         N = 1 << n
-        ku = round(0.7 * 0.5 * N)  # mid-range ρ
-        kv = round(0.7 * 1.0 * N)
+        pi = resolve_path_i(cfg, N)
+        ku = round(0.7 * cfg["Ru_dir"] * N)
+        kv = round(0.7 * cfg["Rv_dir"] * N)
+        ku = max(1, min(ku, N - 1))
+        kv = max(1, min(kv, N - 1))
         Au, Av, frozen_u, frozen_v, _, _ = design_bemac(n, ku, kv)
-        b = make_path(N, path_i=N)
+        b = make_path(N, path_i=pi)
 
-        base_seed = SEED + n * 100000
+        base_seed = seed + n * 100000
         args_list = [
-            (N, n, ku, kv, Au, Av, frozen_u, frozen_v, b, base_seed + i)
+            (N, n, ku, kv, Au, Av, frozen_u, frozen_v, b, L, base_seed + i)
             for i in range(BENCHMARK_CODEWORDS)
         ]
 
@@ -120,75 +121,121 @@ def benchmark(n_values, n_workers):
 
         wall_per_cw = elapsed / BENCHMARK_CODEWORDS
         timings[n] = wall_per_cw
-        log(f"  N={N:>5d} (n={n:>2d}): {wall_per_cw*1000:.1f} ms/codeword wall-clock "
+        log(f"  N={N:>5d} (n={n:>2d}): {wall_per_cw*1000:.1f} ms/codeword "
             f"({BENCHMARK_CODEWORDS} cw, {n_workers} workers, {elapsed:.2f}s)")
 
     return timings
 
 
 # ════════════════════════════════════════════════════════════════════
-#  MAIN SIMULATION
+#  MAIN
 # ════════════════════════════════════════════════════════════════════
 
+def parse_args():
+    p = argparse.ArgumentParser(description="Unified BE-MAC polar code simulation")
+    p.add_argument("--class", "-c", dest="code_class", required=True, choices=["A", "B", "C"],
+                   help="Code class")
+    p.add_argument("--L", type=int, default=1, help="List size (1=SC, >1=SCL)")
+    p.add_argument("--N", type=int, nargs="+", default=[1024],
+                   help="Block lengths (must be powers of 2)")
+    p.add_argument("--rho", type=float, nargs="+", default=None,
+                   help="Rho values (default: linspace(0.5, 0.95, 8))")
+    p.add_argument("--hours", type=float, default=2.0, help="Time budget in hours")
+    p.add_argument("--seed", type=int, default=42, help="Random seed")
+    p.add_argument("--design", choices=["analytical", "mc"], default="analytical",
+                   help="Design method")
+    p.add_argument("--output", "-o", type=str, default=None, help="Custom output JSON path")
+    return p.parse_args()
+
+
 def main():
-    t_global = time.time()
+    args = parse_args()
+    cfg = CLASS_CONFIGS[args.code_class]
+    rho_values = np.array(args.rho) if args.rho else np.linspace(0.5, 0.95, 8)
+    L = args.L
+    seed = args.seed
+    design_mode = args.design
+    total_budget_s = args.hours * 3600
 
-    # Determine number of workers for multiprocessing
+    # Convert N values to n (log2)
+    n_values = []
+    for N in args.N:
+        n = int(np.log2(N))
+        assert 1 << n == N, f"N={N} is not a power of 2"
+        n_values.append(n)
+
+    # Output path
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    results_dir = os.path.join(script_dir, "..", "results")
+    os.makedirs(results_dir, exist_ok=True)
+
+    if args.output:
+        json_path = args.output
+    else:
+        design_tag = f"_{design_mode}" if design_mode == "mc" else ""
+        json_path = os.path.join(results_dir,
+                                 f"sim_bemac_{args.code_class}{design_tag}_L{L}.json")
+
+    # MC design file template
+    mc_design_tmpl = os.path.join(script_dir, "..", "designs",
+                                  f"bemac_{args.code_class}_n{{n}}.npz")
+
     n_workers = min(os.cpu_count() or 1, 8)
+    decoder_name = f"SC (L=1)" if L == 1 else f"SCL (L={L})"
 
-    log("sim_bemac_class_c.py — BE-MAC Code Class C = (0.5, 1)")
-    log(f"  Block lengths: N = {[1 << n for n in BLOCK_LENGTHS]}")
-    log(f"  Rho values: {RHO_VALUES.tolist()}")
-    log(f"  Total time budget: {TOTAL_BUDGET_S/3600:.1f} hours")
+    log(f"simulate.py — BE-MAC Code Class {args.code_class} = "
+        f"({cfg['Ru_dir']}, {cfg['Rv_dir']}), {decoder_name}")
+    log(f"  Block lengths: N = {args.N}")
+    log(f"  Rho values: {rho_values.tolist()}")
+    log(f"  Design: {design_mode}")
+    log(f"  Time budget: {args.hours:.1f} hours")
     log(f"  Workers: {n_workers}")
-    log(f"  Seed: {SEED}")
+    log(f"  Seed: {seed}")
+    log(f"  Output: {json_path}")
     log()
 
-    # ── Step 1: Benchmark (with multiprocessing, so wall-clock is accurate)
-    log("=== Benchmarking decode speed (wall-clock with multiprocessing) ===")
-    timings = benchmark(BLOCK_LENGTHS, n_workers)
+    # ── Benchmark ──
+    log("=== Benchmarking decode speed ===")
+    timings = benchmark(n_values, n_workers, cfg, L, seed)
     log()
 
-    # Compute codewords per (N, rho) point
-    n_block_lengths = len(BLOCK_LENGTHS)
-    n_rho = len(RHO_VALUES)
-    time_per_N = TOTAL_BUDGET_S / n_block_lengths
-    time_per_point = time_per_N / n_rho
-
-    codewords_per_point = {}
-    for n in BLOCK_LENGTHS:
-        cw = max(200, int(time_per_point / timings[n]))
-        codewords_per_point[n] = cw
+    # Compute codewords per point
+    n_rho = len(rho_values)
+    for n in n_values:
         N = 1 << n
-        log(f"  N={N:>5d}: {cw} codewords/point "
-            f"(~{cw * timings[n]:.0f}s per point, "
-            f"~{cw * timings[n] * n_rho / 60:.0f} min total)")
+        time_per_point = (total_budget_s / len(n_values)) / n_rho
+        cw = max(200, int(time_per_point / timings[n]))
+        log(f"  N={N:>5d}: ~{cw} codewords/point "
+            f"(~{cw * timings[n]:.0f}s/point, ~{cw * timings[n] * n_rho / 60:.0f} min total)")
     log()
 
-    # ── Step 2: Main simulation loop
+    # ── Simulation loop ──
     all_results = []
-    benchmark_meta = {n: {"N": 1 << n, "ms_per_codeword": timings[n] * 1000}
-                      for n in BLOCK_LENGTHS}
+    benchmark_meta = {str(n): {"N": 1 << n, "ms_per_codeword": round(timings[n] * 1000, 2)}
+                      for n in n_values}
     time_spent = 0.0
 
-    for n_idx, n in enumerate(BLOCK_LENGTHS):
+    for n_idx, n in enumerate(n_values):
         N = 1 << n
-        b = make_path(N, path_i=N)
+        pi = resolve_path_i(cfg, N)
+        b = make_path(N, path_i=pi)
 
-        remaining_budget = TOTAL_BUDGET_S - time_spent
-        remaining_Ns = len(BLOCK_LENGTHS) - n_idx
+        remaining_budget = total_budget_s - time_spent
+        remaining_Ns = len(n_values) - n_idx
         time_for_this_N = remaining_budget / remaining_Ns
         n_cw = max(200, int((time_for_this_N / n_rho) / timings[n]))
 
         log("=" * 65)
         log(f"  N = {N}  (n = {n}),  {n_cw} codewords per rate point")
-        log(f"  (budget for this N: ~{time_for_this_N/60:.0f} min)")
+        log(f"  path_i = {pi}, budget ~{time_for_this_N/60:.0f} min")
         log("=" * 65)
 
         skipped = False
-        for rho_idx, rho in enumerate(RHO_VALUES):
-            ku = round(rho * 0.5 * N)
-            kv = round(rho * 1.0 * N)
+        for rho_idx, rho in enumerate(rho_values):
+            ku = round(rho * cfg["Ru_dir"] * N)
+            kv = round(rho * cfg["Rv_dir"] * N)
+            ku = max(1, min(ku, N - 1))
+            kv = max(1, min(kv, N - 1))
             Ru = ku / N
             Rv = kv / N
 
@@ -197,33 +244,36 @@ def main():
                     "N": N, "n": n,
                     "Ru": round(Ru, 6), "Rv": round(Rv, 6),
                     "rho": round(float(rho), 6),
-                    "ku": ku, "kv": kv, "L": 1,
+                    "ku": ku, "kv": kv, "L": L,
                     "bler": None, "ber_u": None, "ber_v": None,
                     "block_errors": None, "n_codewords": 0,
-                    "time_s": 0, "path_i": N, "skipped": True,
+                    "time_s": 0, "path_i": pi, "skipped": True,
                 }
                 all_results.append(result_row)
                 log(f"  rho={rho:.4f}  SKIPPED (previous BLER > {BLER_SKIP_THRESHOLD})")
                 continue
 
-            Au, Av, frozen_u, frozen_v, _, _ = design_bemac(n, ku, kv)
+            # Design
+            if design_mode == "mc":
+                mc_path = mc_design_tmpl.format(n=n)
+                Au, Av, frozen_u, frozen_v, _, _, _ = design_from_file(mc_path, n, ku, kv)
+            else:
+                Au, Av, frozen_u, frozen_v, _, _ = design_bemac(n, ku, kv)
 
-            base_seed = SEED + n * 100000 + rho_idx * 10000
+            base_seed = seed + n * 100000 + rho_idx * 10000
             args_list = [
-                (N, n, ku, kv, Au, Av, frozen_u, frozen_v, b, base_seed + i)
+                (N, n, ku, kv, Au, Av, frozen_u, frozen_v, b, L, base_seed + i)
                 for i in range(n_cw)
             ]
 
             t0 = time.time()
-
             if n_workers > 1 and n_cw > 10:
                 with ProcessPoolExecutor(max_workers=n_workers) as executor:
                     results = list(executor.map(
                         _sim_one_codeword, args_list,
                         chunksize=max(1, n_cw // (n_workers * 4))))
             else:
-                results = [_sim_one_codeword(args) for args in args_list]
-
+                results = [_sim_one_codeword(a) for a in args_list]
             elapsed = time.time() - t0
 
             block_errors = sum(r[0] for r in results)
@@ -237,14 +287,13 @@ def main():
                 "N": N, "n": n,
                 "Ru": round(Ru, 6), "Rv": round(Rv, 6),
                 "rho": round(float(rho), 6),
-                "ku": ku, "kv": kv, "L": 1,
+                "ku": ku, "kv": kv, "L": L,
                 "bler": bler,
                 "ber_u": ber_u, "ber_v": ber_v,
                 "block_errors": block_errors,
-                "u_bit_errors": u_bit_errors, "v_bit_errors": v_bit_errors,
                 "n_codewords": n_cw,
                 "time_s": round(elapsed, 2),
-                "path_i": N,
+                "path_i": pi,
             }
             all_results.append(result_row)
 
@@ -258,28 +307,33 @@ def main():
                 log(f"  ** BLER {bler:.4f} > {BLER_SKIP_THRESHOLD} — "
                     f"skipping remaining rho for N={N} **")
 
-            # Checkpoint after each rate point
+            # Checkpoint
+            path_desc = f"path_i={pi}" if pi != N else "0^N 1^N (path_i=N)"
             output = {
-                "description": "BE-MAC Code Class C = (0.5, 1), Onay ISIT 2013",
+                "description": f"BE-MAC Code Class {args.code_class} = "
+                               f"({cfg['Ru_dir']}, {cfg['Rv_dir']}), {decoder_name}",
                 "channel": "BE-MAC",
-                "decoder": "SC (L=1), efficient O(N log N)",
-                "design": "analytical Bhattacharyya",
-                "path": "0^N 1^N (path_i=N)",
-                "seed": SEED,
+                "class": args.code_class,
+                "decoder": f"{decoder_name}, efficient O(N log N)",
+                "design": design_mode,
+                "path_i_frac": cfg["path_i_frac"],
+                "seed": seed,
+                "L": L,
                 "bler_skip_threshold": BLER_SKIP_THRESHOLD,
                 "timestamp": datetime.now().isoformat(),
                 "benchmark": benchmark_meta,
                 "results": all_results,
             }
-            with open(JSON_PATH, "w") as f:
+            with open(json_path, "w") as f:
                 json.dump(output, f, indent=2)
 
             time_spent += elapsed
 
         log()
 
-    # ── Summary
-    total_time = time.time() - t_global
+    # ── Summary ──
+    total_time = time.time() - (time.time() - time_spent)  # approximate
+    total_time = time_spent  # use accumulated time
 
     log("=" * 105)
     log("  SUMMARY")
@@ -299,8 +353,8 @@ def main():
                 f"{r['bler']:10.4f} {r['ber_u']:10.4e} {r['ber_v']:10.4e} "
                 f"{r['block_errors']:7d} {r['n_codewords']:6d} {r['time_s']:6.1f}s")
     log("-" * 105)
-    log(f"Total runtime: {total_time:.0f}s ({total_time/3600:.2f}h)")
-    log(f"Results saved to {JSON_PATH}")
+    log(f"Total simulation time: {time_spent:.0f}s ({time_spent/3600:.2f}h)")
+    log(f"Results saved to {json_path}")
     log("Done.")
 
 

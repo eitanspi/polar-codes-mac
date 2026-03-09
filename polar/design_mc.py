@@ -20,7 +20,7 @@ import numpy as np
 
 from .encoder import polar_encode
 from .channels import BEMAC, ABNMAC
-from ._decoder_base import _build_z_tree, _coord_prob_u_log, _coord_prob_v_log
+from ._decoder_numba import _build_z_tree, _coord_prob_u_log, _coord_prob_v_log
 from .design import make_path
 
 
@@ -252,10 +252,24 @@ def load_design(filepath):
     if not filepath.endswith('.npz'):
         filepath += '.npz'
     data = np.load(filepath, allow_pickle=True)
-    sorted_u = data['sorted_u']
-    sorted_v = data['sorted_v']
-    pe_u = data['error_rates_u'] if 'error_rates_u' in data else None
-    pe_v = data['error_rates_v'] if 'error_rates_v' in data else None
+
+    # Support both formats:
+    #   old: sorted_u, sorted_v, error_rates_u, error_rates_v
+    #   new: u_error_rates, v_error_rates (sorted lists derived from these)
+    if 'sorted_u' in data:
+        sorted_u = data['sorted_u']
+        sorted_v = data['sorted_v']
+        pe_u = data['error_rates_u'] if 'error_rates_u' in data else None
+        pe_v = data['error_rates_v'] if 'error_rates_v' in data else None
+    elif 'u_error_rates' in data:
+        pe_u = data['u_error_rates']
+        pe_v = data['v_error_rates']
+        # Sort positions by error rate (ascending = best first), 0-indexed
+        sorted_u = np.argsort(pe_u)
+        sorted_v = np.argsort(pe_v)
+    else:
+        raise KeyError(f"Unrecognized design file format: {list(data.keys())}")
+
     path_i = int(data['path_i']) if 'path_i' in data else None
     return sorted_u, sorted_v, pe_u, pe_v, path_i
 

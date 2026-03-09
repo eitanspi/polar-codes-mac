@@ -1,20 +1,26 @@
 """
 plot_results.py
 ===============
-Plot BLER simulation results from JSON files produced by sim_bemac_class_c.py.
+Publication-quality figures for polar-coded BE-MAC simulation results.
 
 Usage:
-    python scripts/plot_results.py results/file1.json [results/file2.json ...]
+    # Figure 1: Rate region with L=32 operating points
+    python scripts/plot_results.py --rate-region -o figures/fig1_rate_region.pdf \\
+        results/sim_bemac_A_mc_L32.json results/sim_bemac_B_mc_L32.json \\
+        results/sim_bemac_C_L32.json
 
-Outputs:
-    results/bler_bars.pdf      – grouped bar chart: BLER vs rate pair
-    results/bler_vs_rate.pdf   – line plot: BLER vs sum-rate
+    # Figure 2: BLER vs sum-rate for Class B (L=1 vs L=32)
+    python scripts/plot_results.py -o figures/fig2_bler_class_B.pdf \\
+        results/sim_bemac_B_mc_L1.json results/sim_bemac_B_mc_L32.json
+
+    # Generic BLER vs sum-rate
+    python scripts/plot_results.py results/sim_bemac_C_L1.json
 """
 
+import argparse
 import json
-import sys
 import os
-from collections import defaultdict
+import sys
 
 import numpy as np
 import matplotlib
@@ -22,244 +28,338 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-# ── IEEE-style serif font settings ──────────────────────────────────────────
+# ── IEEE-style formatting ────────────────────────────────────────────────────
 plt.rcParams.update({
-    "font.family":       "serif",
-    "font.serif":        ["Times New Roman", "DejaVu Serif", "serif"],
+    "font.family":      "serif",
+    "font.serif":       ["Times New Roman", "DejaVu Serif", "serif"],
     "mathtext.fontset":  "stix",
-    "axes.labelsize":    11,
-    "axes.titlesize":    11,
-    "xtick.labelsize":   9,
-    "ytick.labelsize":   9,
+    "axes.labelsize":    12,
+    "axes.titlesize":    12,
+    "xtick.labelsize":   10,
+    "ytick.labelsize":   10,
     "legend.fontsize":   9,
     "figure.dpi":        150,
     "axes.grid":         True,
     "grid.linestyle":    "--",
     "grid.alpha":        0.4,
     "axes.linewidth":    0.8,
-    "lines.linewidth":   1.4,
-    "lines.markersize":  5,
+    "lines.linewidth":   1.6,
+    "lines.markersize":  6,
 })
 
-COLORS = ["#1f77b4", "#d62728", "#2ca02c", "#ff7f0e", "#9467bd", "#8c564b"]
-MARKERS = ["o", "s", "^", "D", "v", "P"]
+MARKERS_BY_N = {1024: "o", 4096: "s", 16384: "^", 65536: "D"}
+COLORS = ["#1f77b4", "#d62728", "#2ca02c", "#ff7f0e", "#9467bd",
+          "#8c564b", "#e377c2", "#7f7f7f"]
+
+# Code class directions (Ru_dir, Rv_dir) — for rate region plot
+CODE_CLASS_DIRS = {
+    "A": (0.75, 0.75),
+    "B": (0.625, 0.875),
+    "C": (0.5, 1.0),
+}
+CLASS_MARKERS = {"A": "o", "B": "s", "C": "^"}
 
 
 # ── Data loading ─────────────────────────────────────────────────────────────
 
-def load_files(paths):
-    """Load JSON result files. Returns list of (label, records)."""
-    datasets = []
-    for path in paths:
-        with open(path) as f:
-            records = json.load(f)
-        label = os.path.splitext(os.path.basename(path))[0]
-        datasets.append((label, records))
-    return datasets
-
-
-def rate_label(ru, rv):
-    return f"({ru:.2f}, {rv:.2f})"
+def load_file(path):
+    """Load a JSON result file. Returns the full dict with 'results' list."""
+    with open(path) as f:
+        data = json.load(f)
+    # Attach source filename for labelling
+    data["_filename"] = os.path.splitext(os.path.basename(path))[0]
+    data["_path"] = path
+    return data
 
 
 def bler_or_upper(record):
-    """Return BLER value. If zero, return an upper-bound 1/n_cw (or None if n_cw=0)."""
-    bler = record.get("bler", 0.0)
+    """Return (bler_value, is_upper_bound).  None if no data."""
+    bler = record.get("bler")
+    if bler is None:
+        return None, True
     n_cw = record.get("n_codewords", 0)
     if bler > 0:
         return bler, False
     if n_cw > 0:
-        return 1.0 / n_cw, True   # upper bound
+        return 1.0 / n_cw, True
     return None, True
 
 
-# ── Summary table ─────────────────────────────────────────────────────────────
-
-def print_summary(datasets):
-    header = f"{'File':<40} {'Ru':>5} {'Rv':>5} {'L':>4} {'BLER':>12} {'n_cw':>7} {'blk_err':>8} {'time_s':>9}"
-    print(header)
-    print("-" * len(header))
-    for label, records in datasets:
-        for r in records:
-            bler, is_ub = bler_or_upper(r)
-            bler_str = f"<{bler:.2e}" if is_ub else f" {bler:.2e}"
-            print(
-                f"{label:<40} {r['Ru']:>5.2f} {r['Rv']:>5.2f} {r['L']:>4d} "
-                f"{bler_str:>12} {r['n_codewords']:>7d} {r['block_errors']:>8d} "
-                f"{r['time_s']:>9.1f}"
-            )
-    print()
+def get_L(dataset):
+    """Extract L from dataset metadata or first result."""
+    if "L" in dataset:
+        return dataset["L"]
+    for r in dataset.get("results", []):
+        if "L" in r:
+            return r["L"]
+    return None
 
 
-# ── Plot 1: BLER vs rate pair (grouped bar chart) ────────────────────────────
+def get_marker(N):
+    return MARKERS_BY_N.get(N, "o")
 
-def plot_bler_bars(datasets, out_path):
-    all_rate_pairs = sorted(
-        {(r["Ru"], r["Rv"]) for _, recs in datasets for r in recs},
-        key=lambda x: (x[0] + x[1], x[0])
-    )
-    all_L = sorted({r["L"] for _, recs in datasets for r in recs})
 
-    index = {}
-    for label, records in datasets:
-        for r in records:
-            key = (label, r["Ru"], r["Rv"], r["L"])
-            index[key] = bler_or_upper(r)
+# ── Plot 1/3: BLER vs sum-rate ───────────────────────────────────────────────
 
-    n_pairs = len(all_rate_pairs)
-    n_groups = len(datasets) * len(all_L)
-    bar_width = 0.8 / max(n_groups, 1)
-    x = np.arange(n_pairs)
+def plot_bler_vs_sumrate(datasets, out_path, title=None):
+    """BLER vs sum-rate. Auto-detects L=1 vs L=32 comparison mode."""
+    fig, ax = plt.subplots(figsize=(6, 4.5))
 
-    fig, ax = plt.subplots(figsize=(max(6, n_pairs * 1.4), 4.5))
+    # Collect all unique L values across datasets
+    all_L = set()
+    for ds in datasets:
+        for r in ds["results"]:
+            if r.get("L") is not None:
+                all_L.add(r["L"])
+    is_comparison = len(all_L) > 1  # Plot 3: L comparison mode
 
+    # Build curves: one per (filename, N, L) combination
     color_idx = 0
-    bar_idx = 0
-    legend_handles = []
+    # Assign colors per (filename, L) combination
+    file_L_colors = {}
 
-    for di, (label, _) in enumerate(datasets):
-        for li, L_val in enumerate(all_L):
-            offsets = (bar_idx - (n_groups - 1) / 2) * bar_width
-            blers = []
-            uppers = []
-            for rp in all_rate_pairs:
-                val, is_ub = index.get((label, rp[0], rp[1], L_val), (None, True))
-                blers.append(val)
-                uppers.append(is_ub)
+    for ds in datasets:
+        fname = ds["_filename"]
+        results = [r for r in ds["results"] if r.get("bler") is not None
+                   or r.get("skipped")]
+        if not results:
+            continue
 
-            color = COLORS[color_idx % len(COLORS)]
-            L_str = f"L={L_val}"
-            file_str = label if len(datasets) > 1 else ""
-            bar_label = f"{file_str} {L_str}".strip()
+        N_values = sorted(set(r["N"] for r in results))
+        L_values = sorted(set(r.get("L", 1) for r in results))
 
-            for xi, (bv, is_ub) in enumerate(zip(blers, uppers)):
-                if bv is None:
+        for L_val in L_values:
+            # Assign color per (filename, L)
+            key = (fname, L_val)
+            if key not in file_L_colors:
+                file_L_colors[key] = COLORS[color_idx % len(COLORS)]
+                color_idx += 1
+            color = file_L_colors[key]
+
+            for N in N_values:
+                subset = [r for r in results
+                          if r["N"] == N and r.get("L", 1) == L_val
+                          and r.get("bler") is not None]
+                if not subset:
                     continue
-                hatch = "//" if is_ub else None
-                bar = ax.bar(
-                    x[xi] + offsets, bv,
-                    width=bar_width * 0.9,
-                    color=color, alpha=0.85,
-                    hatch=hatch,
-                    edgecolor="black", linewidth=0.5,
-                    label="_nolegend_"
-                )
 
-            import matplotlib.patches as mpatches
-            patch = mpatches.Patch(color=color, label=bar_label, alpha=0.85)
-            legend_handles.append(patch)
+                subset.sort(key=lambda r: r["Ru"] + r["Rv"])
+                marker = get_marker(N)
 
-            bar_idx += 1
-            color_idx += 1
+                # Truncate: from highest sum-rate leftward, include
+                # first zero-error point (as upper bound), then stop
+                subset.sort(key=lambda r: r["Ru"] + r["Rv"])
+                kept = []
+                for r in reversed(subset):
+                    bv, ub = bler_or_upper(r)
+                    if bv is None:
+                        continue
+                    kept.append((r["Ru"] + r["Rv"], bv, ub))
+                    if r["bler"] == 0:
+                        break  # include this one, then stop
+                kept.reverse()
 
-    ax.set_yscale("log")
-    ax.set_xticks(x)
-    ax.set_xticklabels([rate_label(rp[0], rp[1]) for rp in all_rate_pairs], rotation=30, ha="right")
-    ax.set_xlabel(r"Rate pair $(R_u,\, R_v)$")
-    ax.set_ylabel("BLER")
-    ax.set_title("BLER vs. Rate Pair (BE-MAC, $N=1024$)")
-    ax.legend(handles=legend_handles, loc="upper left", framealpha=0.9)
+                if not kept:
+                    continue
 
-    ax.text(
-        0.99, 0.01, "Hatched bars: $<1/n_{\\mathrm{cw}}$ (zero errors observed)",
-        transform=ax.transAxes, ha="right", va="bottom",
-        fontsize=7, style="italic", color="gray"
-    )
+                sum_rates = [k[0] for k in kept]
+                blers = [k[1] for k in kept]
+                is_ub = [k[2] for k in kept]
 
-    fig.tight_layout()
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    fig.savefig(out_path, bbox_inches="tight")
-    plt.close(fig)
-    print(f"Saved: {out_path}")
+                # Line style: dashed for L=1 in comparison mode
+                if is_comparison:
+                    ls = "--" if L_val == 1 else "-"
+                else:
+                    ls = "-"
 
+                # Label
+                cls = ds.get("class", "")
+                parts = []
+                if cls:
+                    parts.append(f"Class {cls}")
+                parts.append(f"$N={N}$")
+                if is_comparison or len(all_L) > 1:
+                    parts.append(f"$L={L_val}$")
+                label = ", ".join(parts)
 
-# ── Plot 2: BLER vs sum-rate ──────────────────────────────────────────────────
+                # Connecting line
+                ax.semilogy(sum_rates, blers, color=color, linestyle=ls,
+                            marker=None, alpha=0.5)
 
-def plot_bler_vs_rate(datasets, out_path):
-    all_L = sorted({r["L"] for _, recs in datasets for r in recs})
+                # Confirmed points (bler > 0)
+                x_c = [s for s, ub in zip(sum_rates, is_ub) if not ub]
+                y_c = [b for b, ub in zip(blers, is_ub) if not ub]
+                if x_c:
+                    ax.semilogy(x_c, y_c, color=color, marker=marker,
+                                linestyle="None", label=label,
+                                markeredgecolor="k", markeredgewidth=0.4)
 
-    fig, ax = plt.subplots(figsize=(5.5, 4.2))
+                # Upper-bound points (bler == 0 → shown as 1/n_cw)
+                x_u = [s for s, ub in zip(sum_rates, is_ub) if ub]
+                y_u = [b for b, ub in zip(blers, is_ub) if ub]
+                if x_u:
+                    ub_label = None if x_c else label
+                    ax.semilogy(x_u, y_u, color=color, marker=marker,
+                                linestyle="None", markerfacecolor="white",
+                                markeredgecolor=color, markeredgewidth=1.2,
+                                label=ub_label)
 
-    color_idx = 0
-    for di, (label, records) in enumerate(datasets):
-        for li, L_val in enumerate(all_L):
-            subset = [r for r in records if r["L"] == L_val]
-            if not subset:
-                continue
-
-            subset.sort(key=lambda r: r["Ru"] + r["Rv"])
-            sum_rates = [r["Ru"] + r["Rv"] for r in subset]
-            blers = []
-            uppers = []
-            for r in subset:
-                bv, is_ub = bler_or_upper(r)
-                blers.append(bv)
-                uppers.append(is_ub)
-
-            color = COLORS[color_idx % len(COLORS)]
-            marker = MARKERS[color_idx % len(MARKERS)]
-            L_str = f"L={L_val}"
-            line_label = f"{label}, {L_str}" if len(datasets) > 1 else L_str
-
-            x_conf = [s for s, bv, ub in zip(sum_rates, blers, uppers) if bv is not None and not ub]
-            y_conf = [bv for bv, ub in zip(blers, uppers) if bv is not None and not ub]
-            x_ub   = [s for s, bv, ub in zip(sum_rates, blers, uppers) if bv is not None and ub]
-            y_ub   = [bv for bv, ub in zip(blers, uppers) if bv is not None and ub]
-
-            if x_conf or x_ub:
-                x_all = [s for s, bv in zip(sum_rates, blers) if bv is not None]
-                y_all = [bv for bv in blers if bv is not None]
-                ax.semilogy(x_all, y_all, color=color, linestyle="-", marker=None, alpha=0.6)
-
-            if x_conf:
-                ax.semilogy(x_conf, y_conf, color=color, marker=marker,
-                            linestyle="None", label=line_label, markeredgecolor="k",
-                            markeredgewidth=0.4)
-            if x_ub:
-                ax.semilogy(x_ub, y_ub, color=color, marker=marker,
-                            linestyle="None", markerfacecolor="white",
-                            markeredgecolor=color, markeredgewidth=1.2,
-                            label=f"{line_label} (UB)" if x_conf else line_label)
-
-            color_idx += 1
+    # Capacity line (BE-MAC sum capacity = 1.5)
+    ax.axvline(x=1.5, color="black", linestyle=":", linewidth=1.0,
+               label="$C_{\\mathrm{sum}}=1.5$")
 
     ax.set_xlabel(r"Sum rate $R_u + R_v$")
     ax.set_ylabel("BLER")
-    ax.set_title(r"BLER vs. Sum Rate (BE-MAC, $N=1024$)")
-    ax.legend(loc="upper left", framealpha=0.9)
-    ax.yaxis.set_major_formatter(ticker.LogFormatterMathtext())
 
-    ax.text(
-        0.99, 0.99, "Hollow markers: $<1/n_{\\mathrm{cw}}$ (zero block errors)",
-        transform=ax.transAxes, ha="right", va="top",
-        fontsize=7, style="italic", color="gray"
-    )
+    if title:
+        ax.set_title(title)
+    else:
+        # Auto-generate title
+        all_classes = set(ds.get("class", "") for ds in datasets)
+        all_N_vals = set(r["N"] for ds in datasets for r in ds["results"]
+                         if r.get("bler") is not None)
+        cls_str = f"Class {next(iter(all_classes))}" if len(all_classes) == 1 else ""
+        N_str = f"$N\\!=\\!{next(iter(all_N_vals))}$" if len(all_N_vals) == 1 else ""
+        parts = ["BE-MAC"]
+        if cls_str:
+            parts.append(cls_str)
+        if N_str:
+            parts.append(N_str)
+        if is_comparison:
+            parts.append("SC vs SCL")
+        else:
+            L_str = f"$L={min(all_L)}$" if all_L else ""
+            parts.append(L_str)
+        ax.set_title(" — ".join(p for p in parts if p))
+
+    ax.legend(loc="upper left", framealpha=0.9)
+    ax.set_ylim(bottom=1e-3, top=1)
 
     fig.tight_layout()
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {out_path}")
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Plot 2: Rate region ─────────────────────────────────────────────────────
+
+def plot_rate_region(datasets, out_path, title=None):
+    """Rate region: capacity boundary, dominant face, and L=32 operating points."""
+    fig, ax = plt.subplots(figsize=(5.5, 5.5))
+
+    # ── Capacity region (pentagon) ──
+    cap_ru = [0, 1, 1, 0.5, 0, 0]
+    cap_rv = [0, 0, 0.5, 1, 1, 0]
+    ax.fill(cap_ru, cap_rv, alpha=0.06, color="steelblue")
+    # Non-dominant boundary edges (thin black)
+    for seg in [([0, 1], [0, 0]), ([1, 1], [0, 0.5]),
+                ([0, 0], [0, 1]), ([0, 0.5], [1, 1])]:
+        ax.plot(seg[0], seg[1], "k-", linewidth=0.8)
+    # Dominant face (red, thick)
+    ax.plot([1, 0.5], [0.5, 1], "r-", linewidth=2.2,
+            label=r"Dominant face ($R_u\!+\!R_v = 1.5$)", zorder=3)
+
+    # ── Code class direction rays ──
+    for cls_name, (ru_d, rv_d) in CODE_CLASS_DIRS.items():
+        ax.plot([0, ru_d], [0, rv_d], "k:", linewidth=0.7, alpha=0.4)
+        ax.annotate(f"Class {cls_name}", xy=(ru_d, rv_d),
+                    fontsize=8, ha="center", va="bottom", color="dimgray",
+                    xytext=(0, 6), textcoords="offset points")
+
+    # ── Operating points: best (highest sum-rate) per class with BLER = 0 ──
+    best = {}
+    for ds in datasets:
+        cls = ds.get("class", "?")
+        for r in ds["results"]:
+            if r.get("bler") is None or r.get("skipped"):
+                continue
+            if r["bler"] == 0 and r.get("n_codewords", 0) > 0:
+                sr = r["Ru"] + r["Rv"]
+                if cls not in best or sr > best[cls]["Ru"] + best[cls]["Rv"]:
+                    best[cls] = r
+
+    for cls in sorted(best):
+        r = best[cls]
+        marker = CLASS_MARKERS.get(cls, "o")
+        ax.plot(r["Ru"], r["Rv"], marker=marker, color="#1f77b4",
+                markeredgecolor="k", markeredgewidth=0.6,
+                markersize=10, zorder=4,
+                label=f"Class {cls}")
+        ax.annotate(f"$({r['Ru']:.2f},\\, {r['Rv']:.2f})$",
+                    xy=(r["Ru"], r["Rv"]),
+                    fontsize=8, ha="left", va="bottom",
+                    xytext=(6, 6), textcoords="offset points")
+
+    ax.set_xlabel(r"$R_u$", fontsize=13)
+    ax.set_ylabel(r"$R_v$", fontsize=13)
+    ax.set_title(title or r"BE-MAC Rate Region — $N\!=\!1024$, SCL $L\!=\!32$",
+                 fontsize=13)
+    ax.set_xlim(-0.02, 1.12)
+    ax.set_ylim(-0.02, 1.12)
+    ax.set_aspect("equal")
+    ax.legend(loc="upper right", framealpha=0.9, fontsize=9)
+
+    ax.text(0.02, 0.02,
+            r"Highest achieved rate with BLER $< 10^{-3}$",
+            transform=ax.transAxes, ha="left", va="bottom",
+            fontsize=9, color="dimgray", style="italic")
+
+    fig.tight_layout()
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved: {out_path}")
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────────
+
+def auto_output_path(args, datasets):
+    """Generate default output path from input filenames and mode."""
+    if args.output:
+        return args.output
+    base = os.path.dirname(datasets[0]["_path"]) or "results"
+    if args.rate_region:
+        name = "rate_region.pdf"
+    else:
+        stems = [ds["_filename"] for ds in datasets]
+        name = "bler_vs_sumrate_" + "_".join(stems)
+        # Truncate if too long
+        if len(name) > 120:
+            name = name[:120]
+        name += ".pdf"
+    return os.path.join(base, name)
+
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/plot_results.py results/file1.json [results/file2.json ...]")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Plot polar-coded MAC simulation results (PDF output).")
+    parser.add_argument("files", nargs="+", help="JSON result file(s)")
+    parser.add_argument("--rate-region", action="store_true",
+                        help="Generate rate region plot instead of BLER vs sum-rate")
+    parser.add_argument("--output", "-o", default=None,
+                        help="Output PDF path (default: auto-generated)")
+    parser.add_argument("--title", "-t", default=None,
+                        help="Custom plot title")
+    parser.add_argument("--no-show", action="store_true",
+                        help="Don't open PDF after saving (default: just save)")
+    args = parser.parse_args()
 
-    paths = sys.argv[1:]
-    for p in paths:
+    # Validate inputs
+    for p in args.files:
         if not os.path.isfile(p):
             print(f"Error: file not found: {p}", file=sys.stderr)
             sys.exit(1)
 
-    datasets = load_files(paths)
+    # Load datasets
+    datasets = [load_file(p) for p in args.files]
 
-    print_summary(datasets)
-    plot_bler_bars(datasets,    "results/bler_bars.pdf")
-    plot_bler_vs_rate(datasets, "results/bler_vs_rate.pdf")
+    out_path = auto_output_path(args, datasets)
+
+    if args.rate_region:
+        plot_rate_region(datasets, out_path, title=args.title)
+    else:
+        plot_bler_vs_sumrate(datasets, out_path, title=args.title)
 
 
 if __name__ == "__main__":

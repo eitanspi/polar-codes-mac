@@ -1,11 +1,12 @@
 """
 decoder.py
 ==========
-O(N log N) LLR-based SC decoder for the two-user binary-input MAC.
+Unified SC decoder for two-user binary-input MAC polar codes.
 
-Replaces the recursive probability approach in _decoder_base.py with a standard
-Arikan factor-graph traversal, extended for MAC by choosing marginal vs
-conditional leaf LLRs at each decode step.
+Auto-dispatches based on path type:
+  - path_i=0 or path_i=N  -> O(N log N) LLR-based SC decoder (faster, ~2x)
+  - intermediate paths     -> O(N log N) tensor-based computational graph SC
+                              (Ren et al. 2025)
 
 Public API:
     decode_single(N, z, b, frozen_u, frozen_v, channel, log_domain=True)
@@ -17,7 +18,7 @@ import numpy as np
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Phase 1 — vectorised leaf log-probability array
+#  Shared: vectorised leaf log-probability array
 # ─────────────────────────────────────────────────────────────────────────────
 
 def build_log_W_leaf(z, channel) -> np.ndarray:
@@ -65,276 +66,7 @@ def build_log_W_leaf(z, channel) -> np.ndarray:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Phase 2 — f/g nodes and recursive LLR tree (single-user U skeleton)
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _f(La, Lb):
-    """
-    f-node (check node / box-plus): marginalises over one unknown bit.
-
-        f(La, Lb) = logaddexp(La+Lb, 0) - logaddexp(La, Lb)
-
-    NaN arises when La+Lb = ±inf ∓ inf (e.g. BE-MAC leaf LLRs hit {±inf, 0}).
-    Fallback: sign(La)*sign(Lb)*min(|La|,|Lb|) — exact at ±inf, small error
-    elsewhere (never triggered for finite ABN-MAC LLRs).
-
-    Vectorised: La, Lb may be scalars or arrays.
-    """
-    result = np.logaddexp(La + Lb, 0.0) - np.logaddexp(La, Lb)
-    nan_mask = np.isnan(result)
-    if np.ndim(nan_mask) == 0:
-        if nan_mask:
-            result = float(np.sign(La) * np.sign(Lb)
-                           * np.minimum(np.abs(La), np.abs(Lb)))
-    elif np.any(nan_mask):
-        fallback = (np.sign(La) * np.sign(Lb)
-                    * np.minimum(np.abs(La), np.abs(Lb)))
-        result = np.where(nan_mask, fallback, result)
-    return result
-
-
-def _g(La, Lb, u):
-    """
-    g-node (variable node): conditions on already-decided bit u.
-
-        g(La, Lb, u) = Lb + (1 - 2*u) * La
-
-    NaN arises when Lb and (1-2u)*La are both ±inf with opposite signs,
-    indicating contradictory observations (e.g. a frozen bit forced to a
-    value that contradicts the channel).  Fallback: 0.0 (maximum
-    uncertainty), matching the probability-domain result that both
-    conditional probabilities are zero.
-
-    Vectorised: all arguments may be arrays of the same shape.
-    """
-    result = Lb + (1.0 - 2.0 * u) * La
-    nan_mask = np.isnan(result)
-    if np.ndim(nan_mask) == 0:
-        if nan_mask:
-            result = 0.0
-    elif np.any(nan_mask):
-        result = np.where(nan_mask, 0.0, result)
-    return result
-
-
-def _u_marginal_llr(log_W_leaf):
-    """
-    Compute U-marginal leaf LLRs from (N,2,2) log-prob array.
-
-        L[t] = log sum_y W(z_t|0,y) - log sum_y W(z_t|1,y)
-
-    Returns shape (N,).
-    """
-    return (np.logaddexp(log_W_leaf[:, 0, 0], log_W_leaf[:, 0, 1]) -
-            np.logaddexp(log_W_leaf[:, 1, 0], log_W_leaf[:, 1, 1]))
-
-
-class _SCNode:
-    """
-    Streaming SC sub-channel node for the Arikan polar code.
-
-    Provides LLRs one at a time (get_llr) and accepts decisions (feed).
-    At each level, even-indexed positions use f-nodes, odd-indexed use g-nodes,
-    matching the Arikan recursion with even/odd interleaving (butterfly_ops).
-
-    The tree of _SCNode objects is O(N) total size and processes N bits
-    with O(N log N) total f/g-node evaluations.
-    """
-    __slots__ = ('N', 'ch0', 'left', 'right', '_Ll', '_Lr', 'decisions')
-
-    def __init__(self, channel_llr):
-        self.N = len(channel_llr)
-        if self.N == 1:
-            self.ch0 = float(channel_llr[0])
-        else:
-            h = self.N >> 1
-            self.left = _SCNode(channel_llr[:h])
-            self.right = _SCNode(channel_llr[h:])
-            self._Ll = 0.0
-            self._Lr = 0.0
-            self.decisions = np.zeros(self.N, dtype=np.int8)
-
-    def get_llr(self, k):
-        """Return the LLR for natural-order position *k*."""
-        if self.N == 1:
-            return self.ch0
-        if k & 1 == 0:                         # even → f-node
-            self._Ll = self.left.get_llr(k >> 1)
-            self._Lr = self.right.get_llr(k >> 1)
-            return _f(self._Ll, self._Lr)
-        else:                                   # odd  → g-node
-            return _g(self._Ll, self._Lr, self.decisions[k - 1])
-
-    def feed(self, k, bit):
-        """Feed back the decision for position *k*."""
-        if self.N == 1:
-            return
-        self.decisions[k] = bit
-        if k & 1 == 1:                         # pair complete → propagate
-            self.left.feed(k >> 1, self.decisions[k - 1] ^ bit)
-            self.right.feed(k >> 1, bit)
-
-
-def _sc_decode_from_llr(leaf_llr, frozen_1idx):
-    """
-    Arikan-order O(N log N) SC decode from arbitrary leaf LLRs.
-
-    Processes bits in natural order using the Arikan recursive
-    decomposition (even/odd interleaving via butterfly_ops).  This
-    matches the virtual channels of _decoder_base.py exactly.
-
-    Parameters
-    ----------
-    leaf_llr    : np.ndarray shape (N,) — per-position channel LLRs
-    frozen_1idx : dict {1-indexed position: frozen value}
-
-    Returns
-    -------
-    decoded : np.ndarray shape (N,) int8 — decoded bits in natural order
-    """
-    N = len(leaf_llr)
-    frozen_0 = {k - 1: v for k, v in frozen_1idx.items()}
-
-    node = _SCNode(np.asarray(leaf_llr, dtype=np.float64))
-    u = np.zeros(N, dtype=np.int8)
-
-    for i in range(N):
-        L = node.get_llr(i)
-        if i in frozen_0:
-            u[i] = frozen_0[i]
-        else:
-            u[i] = 0 if L >= 0 else 1
-        node.feed(i, u[i])
-
-    return u
-
-
-def sc_decode_u_marginal(log_W_leaf, frozen_u_1idx):
-    """
-    Decode U using only the marginal channel (V marginalised out).
-
-    This is the single-user SC decoder on W_1(z|x) = sum_y W(z|x,y)/2.
-    Equivalent to the old decoder with path 0^N 1^N during the U phase
-    (all V bits undecided, j=0 throughout).
-
-    Parameters
-    ----------
-    log_W_leaf   : np.ndarray shape (N,2,2) from build_log_W_leaf
-    frozen_u_1idx: dict {1-indexed position: frozen value}
-
-    Returns
-    -------
-    u_hat : np.ndarray shape (N,) int8  — in natural (1-indexed) bit order
-    """
-    return _sc_decode_from_llr(_u_marginal_llr(log_W_leaf), frozen_u_1idx)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  Phase 3 — MAC leaf dispatch: marginal vs conditional LLRs
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _v_marginal_llr(log_W_leaf):
-    """
-    V-marginal leaf LLRs: marginalise over X.
-
-        L[t] = log sum_x W(z_t|x,0) - log sum_x W(z_t|x,1)
-
-    Returns shape (N,).
-    """
-    return (np.logaddexp(log_W_leaf[:, 0, 0], log_W_leaf[:, 1, 0]) -
-            np.logaddexp(log_W_leaf[:, 0, 1], log_W_leaf[:, 1, 1]))
-
-
-def _u_conditional_llr(log_W_leaf, y_enc):
-    """
-    U-conditional leaf LLRs given fully known encoded V codeword y.
-
-        L[t] = log W(z_t|0,y[t]) - log W(z_t|1,y[t])
-
-    Parameters
-    ----------
-    log_W_leaf : np.ndarray shape (N,2,2)
-    y_enc      : np.ndarray shape (N,) int — encoded V codeword bits
-
-    Returns shape (N,).
-    """
-    idx = np.arange(log_W_leaf.shape[0])
-    y   = np.asarray(y_enc, dtype=np.intp)
-    return log_W_leaf[idx, 0, y] - log_W_leaf[idx, 1, y]
-
-
-def _v_conditional_llr(log_W_leaf, x_enc):
-    """
-    V-conditional leaf LLRs given fully known encoded U codeword x.
-
-        L[t] = log W(z_t|x[t],0) - log W(z_t|x[t],1)
-
-    Parameters
-    ----------
-    log_W_leaf : np.ndarray shape (N,2,2)
-    x_enc      : np.ndarray shape (N,) int — encoded U codeword bits
-
-    Returns shape (N,).
-    """
-    idx = np.arange(log_W_leaf.shape[0])
-    x   = np.asarray(x_enc, dtype=np.intp)
-    return log_W_leaf[idx, x, 0] - log_W_leaf[idx, x, 1]
-
-
-def sc_decode_v_conditional(log_W_leaf, x_enc, frozen_v_1idx):
-    """
-    Decode V conditioned on fully known U (encoded codeword x_enc).
-
-    Parameters
-    ----------
-    log_W_leaf    : np.ndarray shape (N,2,2)
-    x_enc         : np.ndarray shape (N,) int — encoded U codeword
-    frozen_v_1idx : dict {1-indexed position: frozen value}
-
-    Returns
-    -------
-    v_hat : np.ndarray shape (N,) int8
-    """
-    return _sc_decode_from_llr(_v_conditional_llr(log_W_leaf, x_enc),
-                               frozen_v_1idx)
-
-
-def sc_decode_u_conditional(log_W_leaf, y_enc, frozen_u_1idx):
-    """
-    Decode U conditioned on fully known V (encoded codeword y_enc).
-
-    Parameters
-    ----------
-    log_W_leaf    : np.ndarray shape (N,2,2)
-    y_enc         : np.ndarray shape (N,) int — encoded V codeword
-    frozen_u_1idx : dict {1-indexed position: frozen value}
-
-    Returns
-    -------
-    u_hat : np.ndarray shape (N,) int8
-    """
-    return _sc_decode_from_llr(_u_conditional_llr(log_W_leaf, y_enc),
-                               frozen_u_1idx)
-
-
-def sc_decode_v_marginal(log_W_leaf, frozen_v_1idx):
-    """
-    Decode V using only the marginal channel (U marginalised out).
-
-    Parameters
-    ----------
-    log_W_leaf    : np.ndarray shape (N,2,2)
-    frozen_v_1idx : dict {1-indexed position: frozen value}
-
-    Returns
-    -------
-    v_hat : np.ndarray shape (N,) int8
-    """
-    return _sc_decode_from_llr(_v_marginal_llr(log_W_leaf), frozen_v_1idx)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  Phase 4 — arbitrary path b
+#  Path detection
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _detect_path_i(N, b):
@@ -360,61 +92,433 @@ def _detect_path_i(N, b):
     return -1
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Phase 5/6 — drop-in API
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+#  PART A: O(N log N) LLR-based SC decoder (extreme paths only)
+# =============================================================================
 
-def decode_single(N, z, b, frozen_u, frozen_v, channel, log_domain=True):
+def _f_llr(La, Lb):
     """
-    O(N log N) SC MAC decoder for one received vector z^N.
+    f-node (check node / box-plus): marginalises over one unknown bit.
+    Vectorised: La, Lb may be scalars or arrays.
+    """
+    result = np.logaddexp(La + Lb, 0.0) - np.logaddexp(La, Lb)
+    nan_mask = np.isnan(result)
+    if np.ndim(nan_mask) == 0:
+        if nan_mask:
+            result = float(np.sign(La) * np.sign(Lb)
+                           * np.minimum(np.abs(La), np.abs(Lb)))
+    elif np.any(nan_mask):
+        fallback = (np.sign(La) * np.sign(Lb)
+                    * np.minimum(np.abs(La), np.abs(Lb)))
+        result = np.where(nan_mask, fallback, result)
+    return result
 
-    For path 0^N 1^N (all U first) or 1^N 0^N (all V first), uses the
-    efficient LLR-based SC decoder.  For other path structures, falls back
-    to the recursive decoder in _decoder_base.py.
 
-    Parameters
-    ----------
-    N         : int — block length (power of 2)
-    z         : list, length N — channel output symbols
-    b         : list[int], length 2N — path vector (0=U step, 1=V step)
-    frozen_u  : dict {1-indexed position: value} — U frozen bits
-    frozen_v  : dict {1-indexed position: value} — V frozen bits
-    channel   : MACChannel
-    log_domain: bool — ignored (always log-domain internally); kept for compat
+def _g_llr(La, Lb, u):
+    """
+    g-node (variable node): conditions on already-decided bit u.
+    Vectorised: all arguments may be arrays of the same shape.
+    """
+    result = Lb + (1.0 - 2.0 * u) * La
+    nan_mask = np.isnan(result)
+    if np.ndim(nan_mask) == 0:
+        if nan_mask:
+            result = 0.0
+    elif np.any(nan_mask):
+        result = np.where(nan_mask, 0.0, result)
+    return result
 
-    Returns
-    -------
-    u_dec : list[int] of length N — decoded U bits (0-indexed)
-    v_dec : list[int] of length N — decoded V bits (0-indexed)
+
+def _u_marginal_llr(log_W_leaf):
+    """U-marginal leaf LLRs: marginalise over Y. Returns shape (N,)."""
+    return (np.logaddexp(log_W_leaf[:, 0, 0], log_W_leaf[:, 0, 1]) -
+            np.logaddexp(log_W_leaf[:, 1, 0], log_W_leaf[:, 1, 1]))
+
+
+def _v_marginal_llr(log_W_leaf):
+    """V-marginal leaf LLRs: marginalise over X. Returns shape (N,)."""
+    return (np.logaddexp(log_W_leaf[:, 0, 0], log_W_leaf[:, 1, 0]) -
+            np.logaddexp(log_W_leaf[:, 0, 1], log_W_leaf[:, 1, 1]))
+
+
+def _u_conditional_llr(log_W_leaf, y_enc):
+    """U-conditional leaf LLRs given fully known encoded V codeword y."""
+    idx = np.arange(log_W_leaf.shape[0])
+    y   = np.asarray(y_enc, dtype=np.intp)
+    return log_W_leaf[idx, 0, y] - log_W_leaf[idx, 1, y]
+
+
+def _v_conditional_llr(log_W_leaf, x_enc):
+    """V-conditional leaf LLRs given fully known encoded U codeword x."""
+    idx = np.arange(log_W_leaf.shape[0])
+    x   = np.asarray(x_enc, dtype=np.intp)
+    return log_W_leaf[idx, x, 0] - log_W_leaf[idx, x, 1]
+
+
+class _SCNode:
+    """
+    Streaming SC sub-channel node for the Arikan polar code.
+    O(N) total size, O(N log N) total f/g-node evaluations.
+    """
+    __slots__ = ('N', 'ch0', 'left', 'right', '_Ll', '_Lr', 'decisions')
+
+    def __init__(self, channel_llr):
+        self.N = len(channel_llr)
+        if self.N == 1:
+            self.ch0 = float(channel_llr[0])
+        else:
+            h = self.N >> 1
+            self.left = _SCNode(channel_llr[:h])
+            self.right = _SCNode(channel_llr[h:])
+            self._Ll = 0.0
+            self._Lr = 0.0
+            self.decisions = np.zeros(self.N, dtype=np.int8)
+
+    def get_llr(self, k):
+        if self.N == 1:
+            return self.ch0
+        if k & 1 == 0:
+            self._Ll = self.left.get_llr(k >> 1)
+            self._Lr = self.right.get_llr(k >> 1)
+            return _f_llr(self._Ll, self._Lr)
+        else:
+            return _g_llr(self._Ll, self._Lr, self.decisions[k - 1])
+
+    def feed(self, k, bit):
+        if self.N == 1:
+            return
+        self.decisions[k] = bit
+        if k & 1 == 1:
+            self.left.feed(k >> 1, self.decisions[k - 1] ^ bit)
+            self.right.feed(k >> 1, bit)
+
+
+def _sc_decode_from_llr(leaf_llr, frozen_1idx):
+    """
+    Arikan-order O(N log N) SC decode from arbitrary leaf LLRs.
+    Returns decoded bits as np.ndarray shape (N,) int8.
+    """
+    N = len(leaf_llr)
+    frozen_0 = {k - 1: v for k, v in frozen_1idx.items()}
+
+    node = _SCNode(np.asarray(leaf_llr, dtype=np.float64))
+    u = np.zeros(N, dtype=np.int8)
+
+    for i in range(N):
+        L = node.get_llr(i)
+        if i in frozen_0:
+            u[i] = frozen_0[i]
+        else:
+            u[i] = 0 if L >= 0 else 1
+        node.feed(i, u[i])
+
+    return u
+
+
+def _decode_extreme_llr(N, log_W, path_i, frozen_u, frozen_v):
+    """
+    O(N log N) LLR-based SC for extreme paths (path_i=0 or path_i=N).
+    Returns (u_dec, v_dec) as lists.
     """
     from .encoder import polar_encode
 
-    path_i = _detect_path_i(N, b)
-    log_W  = build_log_W_leaf(z, channel)
-
     if path_i == N:
-        # 0^N 1^N — decode all U (marginal), then all V (conditional on U)
         u_hat = _sc_decode_from_llr(_u_marginal_llr(log_W), frozen_u)
         x_hat = np.array(polar_encode(u_hat.tolist()), dtype=np.int8)
         v_hat = _sc_decode_from_llr(_v_conditional_llr(log_W, x_hat), frozen_v)
         return u_hat.tolist(), v_hat.tolist()
-
-    elif path_i == 0:
-        # 1^N 0^N — decode all V (marginal), then all U (conditional on V)
+    else:  # path_i == 0
         v_hat = _sc_decode_from_llr(_v_marginal_llr(log_W), frozen_v)
         y_hat = np.array(polar_encode(v_hat.tolist()), dtype=np.int8)
         u_hat = _sc_decode_from_llr(_u_conditional_llr(log_W, y_hat), frozen_u)
         return u_hat.tolist(), v_hat.tolist()
 
+
+# Expose sub-decoders for use by decoder_scl.py
+sc_decode_u_marginal = lambda log_W_leaf, frozen_u_1idx: \
+    _sc_decode_from_llr(_u_marginal_llr(log_W_leaf), frozen_u_1idx)
+sc_decode_v_marginal = lambda log_W_leaf, frozen_v_1idx: \
+    _sc_decode_from_llr(_v_marginal_llr(log_W_leaf), frozen_v_1idx)
+sc_decode_u_conditional = lambda log_W_leaf, y_enc, frozen_u_1idx: \
+    _sc_decode_from_llr(_u_conditional_llr(log_W_leaf, y_enc), frozen_u_1idx)
+sc_decode_v_conditional = lambda log_W_leaf, x_enc, frozen_v_1idx: \
+    _sc_decode_from_llr(_v_conditional_llr(log_W_leaf, x_enc), frozen_v_1idx)
+
+
+# =============================================================================
+#  PART B: O(N log N) tensor-based SC decoder (all paths)
+#  Computational graph approach from Ren et al. (2025)
+# =============================================================================
+
+_NEG_INF = -np.inf
+_LOG_HALF = np.log(0.5)
+_LOG_QUARTER = np.log(0.25)
+
+
+def _circ_conv_batch(A, B):
+    """
+    Vectorized circular convolution of (L, 2, 2) log-prob tensor arrays.
+    out[a,b] = logaddexp over (a',b') of A[a^a', b^b'] + B[a', b']
+    """
+    A00 = A[:, 0, 0]; A01 = A[:, 0, 1]
+    A10 = A[:, 1, 0]; A11 = A[:, 1, 1]
+    B00 = B[:, 0, 0]; B01 = B[:, 0, 1]
+    B10 = B[:, 1, 0]; B11 = B[:, 1, 1]
+
+    out = np.empty_like(A)
+    out[:, 0, 0] = np.logaddexp(
+        np.logaddexp(A00 + B00, A01 + B01),
+        np.logaddexp(A10 + B10, A11 + B11))
+    out[:, 0, 1] = np.logaddexp(
+        np.logaddexp(A01 + B00, A00 + B01),
+        np.logaddexp(A11 + B10, A10 + B11))
+    out[:, 1, 0] = np.logaddexp(
+        np.logaddexp(A10 + B00, A11 + B01),
+        np.logaddexp(A00 + B10, A01 + B11))
+    out[:, 1, 1] = np.logaddexp(
+        np.logaddexp(A11 + B00, A10 + B01),
+        np.logaddexp(A01 + B10, A00 + B11))
+    return out
+
+
+def _norm_prod_batch(A, B):
+    """Vectorized normalized elementwise product of (L, 2, 2) arrays."""
+    raw = A + B
+    total = np.logaddexp(
+        np.logaddexp(raw[:, 0, 0], raw[:, 0, 1]),
+        np.logaddexp(raw[:, 1, 0], raw[:, 1, 1])
+    )
+    finite = np.isfinite(total)
+    result = raw.copy()
+    result[finite] -= total[finite, None, None]
+    return result
+
+
+def _norm_prod_single(A, B):
+    """Normalized elementwise product for single 2x2 tensors."""
+    raw = A + B
+    total = np.logaddexp(
+        np.logaddexp(raw[0, 0], raw[0, 1]),
+        np.logaddexp(raw[1, 0], raw[1, 1])
+    )
+    if np.isfinite(total):
+        return raw - total
+    return raw.copy()
+
+
+class _CompGraph:
+    """
+    Computational graph for SC decoding of monotone chain polar codes.
+
+    Indexing:
+      - Edges: 1..2N-1. Edge 1 = root. Edges N..2N-1 = leaves.
+      - Vertices: 1..N-1. Vertex beta has edges beta, 2*beta, 2*beta+1.
+    """
+
+    def __init__(self, n, log_W_leaf):
+        self.n = n
+        self.N = 1 << n
+        N = self.N
+
+        self.edge_data = [None] * (2 * N)
+
+        from .encoder import bit_reversal_perm
+        br = bit_reversal_perm(n)
+        root = log_W_leaf[br].copy()
+        totals = np.logaddexp(
+            np.logaddexp(root[:, 0, 0], root[:, 0, 1]),
+            np.logaddexp(root[:, 1, 0], root[:, 1, 1])
+        )
+        finite = np.isfinite(totals)
+        root[finite] -= totals[finite, None, None]
+        self.edge_data[1] = root
+
+        for beta in range(2, 2 * N):
+            level = beta.bit_length() - 1
+            size = N >> level
+            self.edge_data[beta] = np.full((size, 2, 2), _LOG_QUARTER,
+                                           dtype=np.float64)
+
+        self.dec_head = 1
+
+    def calc_left(self, beta):
+        parent = self.edge_data[beta]
+        right = self.edge_data[2 * beta + 1]
+        l = right.shape[0]
+        temp = _norm_prod_batch(parent[l:], right)
+        self.edge_data[2 * beta] = _circ_conv_batch(parent[:l], temp)
+
+    def calc_right(self, beta):
+        parent = self.edge_data[beta]
+        left = self.edge_data[2 * beta]
+        l = left.shape[0]
+        temp = _circ_conv_batch(left, parent[:l])
+        self.edge_data[2 * beta + 1] = _norm_prod_batch(parent[l:], temp)
+
+    def calc_parent(self, beta):
+        left = self.edge_data[2 * beta]
+        right = self.edge_data[2 * beta + 1]
+        l = left.shape[0]
+        parent = np.empty((2 * l, 2, 2), dtype=np.float64)
+        parent[:l] = _circ_conv_batch(left, right)
+        parent[l:] = right
+        self.edge_data[beta] = parent
+
+    def step_to(self, target):
+        current = self.dec_head
+        if current == target:
+            return
+        path = self._get_path(current, target)
+        for beta in path:
+            self._step_one(beta)
+        self.dec_head = target
+
+    def _step_one(self, beta):
+        current = self.dec_head
+        if current == beta >> 1:
+            if beta & 1 == 0:
+                self.calc_left(current)
+            else:
+                self.calc_right(current)
+            self.dec_head = beta
+        elif beta == current >> 1:
+            self.calc_parent(current)
+            self.dec_head = beta
+
+    def _get_path(self, current, target):
+        if current == target:
+            return []
+        path_up = []
+        path_down = []
+        c, t = current, target
+        while c != t:
+            if c > t:
+                c = c >> 1
+                path_up.append(c)
+            else:
+                path_down.append(t)
+                t = t >> 1
+        path_down.reverse()
+        return path_up + path_down
+
+
+def _decode_general_tensor(N, log_W, b, frozen_u, frozen_v):
+    """
+    O(N log N) tensor-based SC decoder for arbitrary monotone chain paths.
+    Returns (u_dec, v_dec) as lists.
+    """
+    n = N.bit_length() - 1
+
+    graph = _CompGraph(n, log_W)
+
+    u_hat = {}
+    v_hat = {}
+    i_u = 0
+    i_v = 0
+
+    for step in range(2 * N):
+        gamma = b[step]
+
+        if gamma == 0:
+            i_u += 1
+            i_t = i_u
+            frozen_dict = frozen_u
+        else:
+            i_v += 1
+            i_t = i_v
+            frozen_dict = frozen_v
+
+        leaf_edge = i_t + N - 1
+        target_vertex = leaf_edge >> 1
+
+        graph.step_to(target_vertex)
+
+        temp = graph.edge_data[leaf_edge][0].copy()
+
+        if leaf_edge & 1 == 0:
+            graph.calc_left(target_vertex)
+        else:
+            graph.calc_right(target_vertex)
+
+        top_down = graph.edge_data[leaf_edge][0]
+        combined = _norm_prod_single(top_down, temp)
+
+        if i_t in frozen_dict:
+            bit = frozen_dict[i_t]
+        else:
+            if gamma == 0:
+                p0 = np.logaddexp(combined[0, 0], combined[0, 1])
+                p1 = np.logaddexp(combined[1, 0], combined[1, 1])
+                bit = 1 if p1 > p0 else 0
+            else:
+                p0 = np.logaddexp(combined[0, 0], combined[1, 0])
+                p1 = np.logaddexp(combined[0, 1], combined[1, 1])
+                bit = 1 if p1 > p0 else 0
+
+        if gamma == 0:
+            u_hat[i_t] = bit
+        else:
+            v_hat[i_t] = bit
+
+        new_leaf = np.full((2, 2), _NEG_INF, dtype=np.float64)
+        u_val = u_hat.get(i_t)
+        v_val = v_hat.get(i_t)
+
+        if u_val is not None and v_val is not None:
+            new_leaf[u_val, v_val] = 0.0
+        elif u_val is not None:
+            new_leaf[u_val, 0] = _LOG_HALF
+            new_leaf[u_val, 1] = _LOG_HALF
+        elif v_val is not None:
+            new_leaf[0, v_val] = _LOG_HALF
+            new_leaf[1, v_val] = _LOG_HALF
+        else:
+            new_leaf[:, :] = _LOG_QUARTER
+
+        graph.edge_data[leaf_edge][0] = new_leaf
+
+    u_dec = [u_hat.get(k, 0) for k in range(1, N + 1)]
+    v_dec = [v_hat.get(k, 0) for k in range(1, N + 1)]
+    return u_dec, v_dec
+
+
+# =============================================================================
+#  Public API
+# =============================================================================
+
+def decode_single(N, z, b, frozen_u, frozen_v, channel, log_domain=True):
+    """
+    SC MAC decoder for one received vector z^N.
+
+    Auto-dispatches:
+      - path_i=0 or path_i=N  -> O(N log N) LLR-based (faster)
+      - intermediate paths     -> O(N log N) tensor-based
+
+    Parameters
+    ----------
+    N         : int -- block length (power of 2)
+    z         : list, length N -- channel output symbols
+    b         : list[int], length 2N -- path vector (0=U step, 1=V step)
+    frozen_u  : dict {1-indexed position: value} -- U frozen bits
+    frozen_v  : dict {1-indexed position: value} -- V frozen bits
+    channel   : MACChannel
+    log_domain: bool -- ignored (always log-domain internally)
+
+    Returns
+    -------
+    u_dec : list[int] of length N
+    v_dec : list[int] of length N
+    """
+    path_i = _detect_path_i(N, b)
+    log_W  = build_log_W_leaf(z, channel)
+
+    if path_i == 0 or path_i == N:
+        return _decode_extreme_llr(N, log_W, path_i, frozen_u, frozen_v)
     else:
-        # General path — fall back to recursive decoder
-        from ._decoder_base import decode_single as _old_decode_single
-        return _old_decode_single(N, z, b, frozen_u, frozen_v,
-                                  channel, log_domain)
+        return _decode_general_tensor(N, log_W, b, frozen_u, frozen_v)
 
 
 def _decode_worker(args):
-    """Module-level worker for multiprocessing (must be picklable)."""
     N, z, b, frozen_u, frozen_v, channel, log_domain = args
     return decode_single(N, z, b, frozen_u, frozen_v, channel, log_domain)
 
@@ -424,13 +528,11 @@ def decode_batch(N, Z_list, b, frozen_u, frozen_v, channel,
     """
     Decode a list of received vectors.
 
-    Parameters / returns match _decoder_base.decode_batch exactly.
-
     Parameters
     ----------
     N, b, frozen_u, frozen_v, channel, log_domain : same as decode_single
     Z_list    : list of received vectors, each of length N
-    n_workers : int — parallel worker processes (1 = sequential)
+    n_workers : int -- parallel worker processes (1 = sequential)
 
     Returns
     -------

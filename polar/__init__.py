@@ -1,9 +1,9 @@
 """
-polar — Polar codes for the two-user binary-input MAC.
+polar -- Polar codes for the two-user binary-input MAC.
 
 Implements successive cancellation (SC) and SC list (SCL) decoding
 of polar codes for the two-user binary-input multiple access channel,
-reproducing results from Önay (ISIT 2013).
+reproducing results from Onay (ISIT 2013).
 """
 
 from .encoder import polar_encode, build_message

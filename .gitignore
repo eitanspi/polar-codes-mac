@@ -36,9 +36,6 @@ env/
 .claude/
 
 # Project-specific
-results/*.json
-results/*.txt
-results/*.png
-designs/*.npz
 *.output
-*.pdf
+*.log
+run_10k.sh
