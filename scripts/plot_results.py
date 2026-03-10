@@ -233,7 +233,8 @@ def plot_bler_vs_sumrate(datasets, out_path, title=None):
         ax.set_title(" — ".join(p for p in parts if p))
 
     ax.legend(loc="upper left", framealpha=0.9)
-    ax.set_ylim(bottom=1e-3, top=1)
+    ax.set_xlim(left=1.1)
+    ax.set_ylim(bottom=1e-4, top=1)
 
     fig.tight_layout()
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
@@ -267,14 +268,15 @@ def plot_rate_region(datasets, out_path, title=None):
                     fontsize=8, ha="center", va="bottom", color="dimgray",
                     xytext=(0, 6), textcoords="offset points")
 
-    # ── Operating points: best (highest sum-rate) per class with BLER = 0 ──
+    # ── Operating points: best (highest sum-rate) per class with BLER < 1e-3 ──
+    BLER_THRESH = 1e-3
     best = {}
     for ds in datasets:
         cls = ds.get("class", "?")
         for r in ds["results"]:
             if r.get("bler") is None or r.get("skipped"):
                 continue
-            if r["bler"] == 0 and r.get("n_codewords", 0) > 0:
+            if r["bler"] < BLER_THRESH and r.get("n_codewords", 0) > 0:
                 sr = r["Ru"] + r["Rv"]
                 if cls not in best or sr > best[cls]["Ru"] + best[cls]["Rv"]:
                     best[cls] = r

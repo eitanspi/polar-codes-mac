@@ -8,11 +8,11 @@
   "seed": 42,
   "L": 32,
   "bler_skip_threshold": 0.5,
-  "timestamp": "2026-03-08T21:31:41.752429",
+  "timestamp": "2026-03-10T09:30:20.874580",
   "benchmark": {
     "10": {
       "N": 1024,
-      "ms_per_codeword": 477.39
+      "ms_per_codeword": 383.63
     }
   },
   "results": [
@@ -25,12 +25,12 @@
       "ku": 384,
       "kv": 384,
       "L": 32,
-      "bler": 0.0010615711252653928,
-      "ber_u": 3.3174097664543524e-05,
-      "ber_v": 3.3174097664543524e-05,
-      "block_errors": 1,
-      "n_codewords": 942,
-      "time_s": 264.74,
+      "bler": 0.00037297527706734866,
+      "ber_u": 2.3865977550440466e-05,
+      "ber_v": 2.3865977550440466e-05,
+      "block_errors": 7,
+      "n_codewords": 18768,
+      "time_s": 5678.99,
       "path_i": 384
     },
     {
@@ -42,12 +42,12 @@
       "ku": 433,
       "kv": 433,
       "L": 32,
-      "bler": 0.0,
-      "ber_u": 0.0,
-      "ber_v": 0.0,
-      "block_errors": 0,
-      "n_codewords": 942,
-      "time_s": 272.42,
+      "bler": 5.328218243819267e-05,
+      "ber_u": 5.906569877674938e-06,
+      "ber_v": 5.906569877674938e-06,
+      "block_errors": 1,
+      "n_codewords": 18768,
+      "time_s": 6271.59,
       "path_i": 384
     },
     {
@@ -63,8 +63,8 @@
       "ber_u": 0.0,
       "ber_v": 0.0,
       "block_errors": 0,
-      "n_codewords": 942,
-      "time_s": 278.76,
+      "n_codewords": 18768,
+      "time_s": 6876.34,
       "path_i": 384
     },
     {
@@ -80,8 +80,8 @@
       "ber_u": 0.0,
       "ber_v": 0.0,
       "block_errors": 0,
-      "n_codewords": 942,
-      "time_s": 280.77,
+      "n_codewords": 18768,
+      "time_s": 7147.25,
       "path_i": 384
     },
     {
@@ -97,8 +97,8 @@
       "ber_u": 0.0,
       "ber_v": 0.0,
       "block_errors": 0,
-      "n_codewords": 942,
-      "time_s": 299.0,
+      "n_codewords": 18768,
+      "time_s": 7594.92,
       "path_i": 384
     },
     {
@@ -114,8 +114,8 @@
       "ber_u": 0.0,
       "ber_v": 0.0,
       "block_errors": 0,
-      "n_codewords": 942,
-      "time_s": 288.27,
+      "n_codewords": 18768,
+      "time_s": 8091.65,
       "path_i": 384
     },
     {
@@ -127,12 +127,12 @@
       "ku": 680,
       "kv": 680,
       "L": 32,
-      "bler": 0.28874734607218683,
-      "ber_u": 0.14327931809666541,
-      "ber_v": 0.07273791682278007,
-      "block_errors": 272,
-      "n_codewords": 942,
-      "time_s": 360.47,
+      "bler": 0.2993393009377664,
+      "ber_u": 0.1479990973371446,
+      "ber_v": 0.0808462307557294,
+      "block_errors": 5618,
+      "n_codewords": 18768,
+      "time_s": 7623.92,
       "path_i": 384
     },
     {
@@ -145,11 +145,11 @@
       "kv": 730,
       "L": 32,
       "bler": 1.0,
-      "ber_u": 0.4995928220341448,
-      "ber_v": 0.3006340342611174,
-      "block_errors": 942,
-      "n_codewords": 942,
-      "time_s": 400.4,
+      "ber_u": 0.499779061416109,
+      "ber_v": 0.29970315255345736,
+      "block_errors": 18768,
+      "n_codewords": 18768,
+      "time_s": 4013.54,
       "path_i": 384
     }
   ]
