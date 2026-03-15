@@ -7,22 +7,36 @@ Auto-dispatches based on path type:
   - path_i=0 or path_i=N  -> O(L * N log N) efficient SCL decoder
   - intermediate paths     -> O(L * N log N) tensor-based SCL decoder
 
+Batch mode (vectorized=True) runs all codewords in a tight single-process
+loop, eliminating multiprocessing overhead.
+
 Public API:
     decode_single_list(N, z, b, frozen_u, frozen_v, channel, log_domain=True, L=4)
     decode_batch_list (N, Z_list, b, frozen_u, frozen_v, channel, log_domain=True,
-                       L=4, n_workers=1)
+                       L=4, n_workers=1, vectorized=True)
 """
 
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
-from .decoder import (
-    build_log_W_leaf,
-    _detect_path_i,
-    _circ_conv_batch,
-    _norm_prod_batch,
-)
-from .encoder import polar_encode
+try:
+    from .decoder import (
+        build_log_W_leaf,
+        build_log_W_leaf_batch,
+        _detect_path_i,
+        _circ_conv_batch,
+        _norm_prod_batch,
+    )
+    from .encoder import polar_encode
+except ImportError:
+    from decoder import (
+        build_log_W_leaf,
+        build_log_W_leaf_batch,
+        _detect_path_i,
+        _circ_conv_batch,
+        _norm_prod_batch,
+    )
+    from encoder import polar_encode
 
 _NEG_INF = -np.inf
 
@@ -319,11 +333,18 @@ def _decode_recursive_scl(N, z, b, frozen_u, frozen_v, channel, L):
     O(L * N^2) recursive SCL MAC decoder for arbitrary paths.
     Uses array-based probability functions from _decoder_numba.
     """
-    from ._decoder_numba import (
-        _build_z_tree,
-        _coord_prob_u_log,
-        _coord_prob_v_log,
-    )
+    try:
+        from ._decoder_numba import (
+            _build_z_tree,
+            _coord_prob_u_log,
+            _coord_prob_v_log,
+        )
+    except ImportError:
+        from _decoder_numba import (
+            _build_z_tree,
+            _coord_prob_u_log,
+            _coord_prob_v_log,
+        )
 
     z_tree = _build_z_tree(list(z))
     cache = {}
@@ -455,7 +476,10 @@ class _BatchCompGraph:
                              _LOG_QUARTER, dtype=np.float64)
 
         # Initialize root
-        from .encoder import bit_reversal_perm
+        try:
+            from .encoder import bit_reversal_perm
+        except ImportError:
+            from encoder import bit_reversal_perm
         br = bit_reversal_perm(n)
         root = log_W_leaf[br].copy()
         totals = np.logaddexp(
@@ -785,20 +809,42 @@ def _decode_list_worker(args):
 
 def decode_batch_list(N: int, Z_list, b: list, frozen_u: dict, frozen_v: dict,
                       channel, log_domain: bool = True, L: int = 4,
-                      n_workers: int = 1) -> list:
+                      n_workers: int = 1, vectorized: bool = True) -> list:
     """
     Decode a list of received vectors using the SCL decoder.
 
     Parameters
     ----------
     N, b, frozen_u, frozen_v, channel, log_domain, L : same as decode_single_list
-    Z_list    : list of received vectors
-    n_workers : int -- parallel worker processes (1 = sequential)
+    Z_list     : list of received vectors
+    n_workers  : int -- parallel worker processes (only used when vectorized=False)
+    vectorized : bool -- if True (default), decode in a tight single-process
+                 loop with pre-built log_W arrays (avoids multiprocessing overhead)
 
     Returns
     -------
     results : list of (u_dec, v_dec) tuples
     """
+    if vectorized and len(Z_list) >= 1:
+        path_i = _detect_path_i(N, b)
+        log_W_batch = build_log_W_leaf_batch(Z_list, channel)
+        m = N.bit_length() - 1
+
+        results = []
+        for i in range(log_W_batch.shape[0]):
+            log_W = log_W_batch[i]
+            if path_i == 0 or path_i == N:
+                if path_i == N:
+                    r = _decode_extreme_u_first(N, m, L, log_W,
+                                                frozen_u, frozen_v)
+                else:
+                    r = _decode_extreme_v_first(N, m, L, log_W,
+                                                frozen_u, frozen_v)
+            else:
+                r = _decode_tensor_scl(N, log_W, b, frozen_u, frozen_v, L)
+            results.append(r)
+        return results
+
     if n_workers <= 1 or len(Z_list) <= 1:
         return [decode_single_list(N, z, b, frozen_u, frozen_v,
                                    channel, log_domain, L)
