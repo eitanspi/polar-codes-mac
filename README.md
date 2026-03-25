@@ -21,7 +21,7 @@ SC List decoder (`polar/decoder_scl.py`) with configurable list size L for impro
 
 ### Neural SC Decoder — Pure Neural CalcParent
 
-A fully neural decoder (`neural/ncg_pure_neural.py`) that eliminates all analytical operations at inference. The CalcParent operation is replaced by a GRU-style gated residual module (`NeuralCalcParent`), giving O(md) complexity per tree operation with zero dependence on channel structure.
+A fully neural decoder (`neural/ncg_pure_neural.py`) that eliminates all analytical operations at inference. The CalcParent operation is replaced by a gated residual module (`NeuralCalcParent`), giving O(md) complexity per tree operation with zero dependence on channel structure.
 
 **Architecture** (38,500 parameters total):
 
@@ -30,11 +30,11 @@ A fully neural decoder (`neural/ncg_pure_neural.py`) that eliminates all analyti
 | EmbeddingZ | z in {0,1,2} -> R^d | Channel observation embedding |
 | NeuralCalcLeft | R^(3d) -> R^d | Replaces analytical f-node (calcLeft) |
 | NeuralCalcRight | R^(3d) -> R^d | Replaces analytical g-node (calcRight) |
-| NeuralCalcParent | R^(2d) -> R^d | GRU-gated residual for calcParent |
+| NeuralCalcParent | R^(2d) -> R^d | Gated residual for calcParent |
 | Emb2Logits | R^d -> R^4 | Shared decision head |
 | Logits2Emb | R^4 -> R^d | Re-embed log-probabilities |
 
-- `NeuralCalcParent`: GRU-gated MLP that takes left and right child embeddings and produces the parent embedding. Uses a gate network (sigmoid) and candidate network (ELU MLP) with an averaging residual connection.
+- `NeuralCalcParent`: Gated MLP that takes left and right child embeddings and produces the parent embedding. Uses a gate network (sigmoid) and candidate network (ELU MLP) with an averaging residual connection.
 - The model is N-independent: the same 38.5K weights decode any block length.
 
 **Training — Knowledge Distillation**:
@@ -98,8 +98,7 @@ neural/                      # Neural decoder
     train_pure_neural.py     # Distillation training for Pure Neural CalcParent
     scale_pure_neural.py     # Curriculum scaling N=32/64/128
     scale_large.py           # Memory-lean curriculum scaling N=256/512/1024
-    channels_memory.py       # ISI and Gilbert-Elliott MAC channels
-    ncg_memory.py            # NCG variant with GRU sequence encoder
+    ncg_gmac.py              # GMAC decoder with continuous z_encoder (MLP)
 designs/                     # Pre-computed frozen set designs (.npz)
 saved_models/                # Trained model checkpoints (N=8 to N=1024)
 results/                     # Evaluation results, plots, campaign data

@@ -1,7 +1,7 @@
 """
 ncg_pure_neural.py — Neural Computational Graph SC Decoder with PURE NEURAL CalcParent.
 
-Uses a learned GRU-style gated residual module for CalcParent:
+Uses a learned gated residual module for CalcParent:
 
     NeuralCalcParent: R^d x R^d -> R^d  (O(md) complexity, channel-independent)
 
@@ -50,7 +50,7 @@ def circ_conv_torch(A, B):
 
 class NeuralCalcParent(nn.Module):
     """
-    GRU-style gated residual for calcParent first half.
+    Gated residual for calcParent first half.
 
     Given left_emb (B, l, d) and right_emb (B, l, d):
         concat = cat(left, right)   # (B, l, 2d)
@@ -94,7 +94,7 @@ class PureNeuralCompGraphDecoder(nn.Module):
     """
     Neural SC Decoder with PURE NEURAL CalcParent.
 
-    CalcParent is a learned GRU-gated MLP instead of analytical circ_conv.
+    CalcParent is a learned gated MLP instead of analytical circ_conv.
 
     Supports knowledge distillation: when distill_alpha > 0, also computes
     teacher (analytical) CalcParent output and returns MSE for distillation loss.

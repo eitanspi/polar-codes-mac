@@ -88,7 +88,7 @@ CalcParent is fundamentally unlearnable by MLPs. Three separate approaches (dire
 2. **O(md) per node**: Tree operations must be independent of channel memory/alphabet size
 3. **Adopt the 2025 computational graph**: Pointer-based traversal (decHead, stepTo, getPath)
 4. **Neuralize calcLeft/calcRight**: MLPs in fixed-size latent space R^d
-5. **Solve CalcParent without naive MLP**: Choose from analytical circ_conv bridge, GRU, or SSM
+5. **Solve CalcParent without naive MLP**: Choose from analytical circ_conv bridge, gated residual, or SSM
 6. **Fail fast**: Overfit micro-batch first, then scale
 
 ---
@@ -329,7 +329,7 @@ Due to time constraints, I did not try:
 - **Scheduled sampling** (mixing teacher forcing with model predictions during training)
 - **Level-specific modules** (different MLP weights per tree level)
 - **Explicit decision conditioning** in NeuralCalcRight (like BitNodeNN's u_sign/v_sign)
-- **GRU or SSM** for CalcParent (Idea B and C from the spec)
+- **gated residual or SSM** for CalcParent (Idea B and C from the spec)
 - **Beam search** at inference (maintaining top-K candidates)
 
 ---
