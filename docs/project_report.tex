@@ -69,8 +69,8 @@ reference decoder to an $O(N \log N)$ computational graph decoder
 supporting all monotone chain decoding paths, a Numba-JIT parallel
 decoder, and an SC List (SCL) decoder.
 The project also includes a neural decoder based on the computational
-graph framework, using learned MLP operations with a Soft-Bit Bridge
-for the calcParent step.
+graph framework, using learned MLP operations for tree operations
+including a fully neural CalcParent.
 Extensive simulation results (BLER vs.\ block length, SNR sweeps, rate
 analysis) are presented for all channel models and code classes.
 \end{abstract}
@@ -111,7 +111,7 @@ and Ren, Nasser, and Bhatt~\cite{ren2025}.
         \end{itemize}
 
   \item \textbf{Neural SC decoder (NCG):}
-        MLP-based tree operations with a Soft-Bit Bridge for calcParent,
+        MLP-based tree operations with a fully neural CalcParent,
         matching or beating analytical SC for BEMAC Class B at $N = 8$--$128$.
 
   \item \textbf{Extensive simulation results:}
@@ -645,20 +645,15 @@ preserving the $O(N \log N)$ computational graph structure.
 
   \item \textbf{Decision Head (\texttt{emb2logits}):} An MLP
         $\mathbb{R}^d \to \mathbb{R}^4$ producing joint logits over
-        $(u, v) \in \{0,1\}^2$. Shared between leaf decisions and the
-        Soft-Bit Bridge.
+        $(u, v) \in \{0,1\}^2$. Shared between leaf decisions and
+        CalcParent.
 
-  \item \textbf{Soft-Bit Bridge (calcParent):}
-        \begin{enumerate}
-          \item Convert child embeddings to log-probabilities via
-                \texttt{emb2logits} + temperature-scaled \texttt{log\_softmax}
-          \item Reshape to $(2, 2)$ tensors and apply \emph{analytical}
-                circular convolution (differentiable via \texttt{torch.logsumexp})
-          \item Convert back to embeddings via \texttt{logits2emb} MLP
-                ($\mathbb{R}^4 \to \mathbb{R}^d$)
-        \end{enumerate}
-        This hybrid approach makes calcParent differentiable while leveraging
-        the known algebraic structure of the circular convolution.
+  \item \textbf{CalcParent:} A GRU-style gated residual module
+        (\texttt{NeuralCalcParent}) that takes left and right child
+        embeddings $\mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}^d$,
+        using a gate network (sigmoid) and candidate network (ELU MLP)
+        with an averaging residual connection. This fully neural approach
+        has $O(md)$ complexity per operation, independent of channel structure.
 
   \item \textbf{Learnable ``no info'' embedding:} A learnable parameter
         vector initializes leaf edges before they receive information.
@@ -1225,10 +1220,11 @@ to_git_v2/
 
   neural/                       # Neural decoder
     __init__.py
-    neural_comp_graph.py        # NCG decoder (MLP + Soft-Bit Bridge)
+    neural_comp_graph.py        # Baseline NCG decoder
+    ncg_pure_neural.py          # Pure Neural CalcParent decoder (38K params)
     ncg_memory.py               # NCG with GRU sequence encoder
     channels_memory.py          # ISI MAC, Gilbert-Elliott MAC
-    train.py                    # Training script
+    train_pure_neural.py        # Training script
 
   designs/                      # Pre-computed design files (.npz)
   saved_models/                 # Pre-trained NCG models (.pt)

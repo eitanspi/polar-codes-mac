@@ -37,7 +37,7 @@
 \maketitle
 
 \begin{abstract}
-We present a neural successive cancellation (SC) decoder for two-user multiple access channel (MAC) polar codes that replaces the analytical tree operations of the computational graph framework with learned neural modules. The decoder operates on the $O(N \log N)$ computational graph structure introduced by Ren et al.\ (2025) for monotone chain decoding paths, preserving the tree navigation and scheduling logic while replacing the three core operations---\texttt{calcLeft}, \texttt{calcRight}, and \texttt{calcParent}---with weight-shared multilayer perceptrons (MLPs). We propose two variants: a \emph{Soft-Bit Bridge} version (27,764 parameters) that retains the analytical circular convolution within the \texttt{calcParent} operation for differentiability, and a \emph{Pure Neural} version (38,500 parameters) that eliminates all analytical operations via a GRU-gated residual architecture trained through knowledge distillation. Both versions achieve block error rates (BLER) competitive with or superior to analytical SC decoding across code lengths $N = 8$ to $1024$, with the Soft-Bit Bridge version achieving a $2\times$ BLER improvement at $N = 1024$. The neural decoder has complexity $O(md \cdot N \log N)$ where $m$ and $d$ are fixed architectural parameters, making it independent of the channel alphabet size and memory---a critical advantage over analytical SC decoding which scales as $O(|\mathcal{S}|^3 N \log N)$ for channels with memory.
+We present a neural successive cancellation (SC) decoder for two-user multiple access channel (MAC) polar codes that replaces the analytical tree operations of the computational graph framework with learned neural modules. The decoder operates on the $O(N \log N)$ computational graph structure introduced by Ren et al.\ (2025) for monotone chain decoding paths, preserving the tree navigation and scheduling logic while replacing the three core operations---\texttt{calcLeft}, \texttt{calcRight}, and \texttt{calcParent}---with weight-shared multilayer perceptrons (MLPs). The Pure Neural CalcParent decoder (38,500 parameters) eliminates all analytical operations via a GRU-gated residual architecture trained through knowledge distillation, achieving block error rates (BLER) competitive with or superior to analytical SC decoding across code lengths $N = 8$ to $1024$. The neural decoder has complexity $O(md \cdot N \log N)$ where $m$ and $d$ are fixed architectural parameters, making it independent of the channel alphabet size and memory---a critical advantage over analytical SC decoding which scales as $O(|\mathcal{S}|^3 N \log N)$ for channels with memory.
 \end{abstract}
 
 \newpage
@@ -57,15 +57,9 @@ The computational graph framework of Ren et al.\ (2025) provides an $O(N \log N)
 
 While the analytical computational graph decoder achieves $O(N \log N)$ complexity for memoryless channels, each tree operation involves manipulating $|\mathcal{S}| \times |\mathcal{S}|$ probability tensors (where $|\mathcal{S}|$ is the channel state space size), and the circular convolution in particular has complexity $O(|\mathcal{S}|^3)$. For channels with memory---such as intersymbol interference (ISI) channels or Gilbert-Elliott channels---$|\mathcal{S}|$ can be large, making the decoder computationally prohibitive.
 
-In this work, we replace the probability tensor manipulations with neural network modules that operate on fixed-dimensional learned embeddings. Each tree operation becomes an MLP forward pass with complexity $O(md)$, where $m$ is the hidden layer width and $d$ is the embedding dimension. The total decoder complexity is $O(md \cdot N \log N)$, independent of the channel model. We present two architectural variants:
+In this work, we replace the probability tensor manipulations with neural network modules that operate on fixed-dimensional learned embeddings. Each tree operation becomes an MLP forward pass with complexity $O(md)$, where $m$ is the hidden layer width and $d$ is the embedding dimension. The total decoder complexity is $O(md \cdot N \log N)$, independent of the channel model. The Pure Neural CalcParent decoder (Section~\ref{sec:pure_neural}) uses a GRU-gated residual network for \texttt{calcParent}, trained via knowledge distillation. Total: 38,500 parameters.
 
-\begin{enumerate}
-    \item \textbf{Soft-Bit Bridge} (Section~\ref{sec:soft_bit_bridge}): The \texttt{calcParent} operation maps embeddings to log-probabilities, applies the exact analytical circular convolution, and maps back. This hybrid approach ensures correctness of the hardest operation while keeping \texttt{calcLeft} and \texttt{calcRight} fully neural. Total: 27,764 parameters.
-
-    \item \textbf{Pure Neural CalcParent} (Section~\ref{sec:pure_neural}): A GRU-gated residual network replaces \texttt{calcParent} entirely, trained via knowledge distillation from the Soft-Bit Bridge teacher. Total: 38,500 parameters.
-\end{enumerate}
-
-Both variants are trained with teacher forcing using 4-class cross-entropy loss and employ curriculum learning across code lengths to scale from $N = 8$ to $N = 1024$.
+The decoder is trained with teacher forcing using 4-class cross-entropy loss and employs curriculum learning across code lengths to scale from $N = 8$ to $N = 1024$.
 
 %=============================================================================
 \section{Background: Polar Codes for the MAC}
@@ -280,7 +274,7 @@ Architecture: $\R^{16} \to \R^{64} \to \R^{64} \to \R^{4}$ with ELU activations.
 This module serves a \textbf{dual purpose}:
 \begin{enumerate}
     \item At leaf positions, it produces the 4-class logits used for bit decisions.
-    \item In the Soft-Bit Bridge \texttt{calcParent}, it converts embeddings to log-probabilities for the analytical circular convolution.
+    \item In the teacher \texttt{calcParent} (used during distillation training), it converts embeddings to log-probabilities for the analytical circular convolution.
 \end{enumerate}
 
 \subsubsection{Logits2Emb (5,520 parameters)}
@@ -292,7 +286,7 @@ The inverse mapping from log-probability space back to the latent embedding spac
 
 Architecture: $\R^{4} \to \R^{64} \to \R^{64} \to \R^{16}$ with ELU activations. Parameter count: $(4 \times 64 + 64) + (64 \times 64 + 64) + (64 \times 16 + 16) = 320 + 4{,}160 + 1{,}040 = 5{,}520$.
 
-This module is used in the Soft-Bit Bridge (to re-embed the circular convolution output) and in the leaf state update (to convert partially deterministic log-probabilities to embeddings).
+This module is used in the teacher CalcParent (to re-embed the circular convolution output during distillation) and in the leaf state update (to convert partially deterministic log-probabilities to embeddings).
 
 \subsubsection{No-Info Embedding (16 parameters)}
 
@@ -326,13 +320,13 @@ Total NeuralCalcParent: $3{,}152 + 7{,}312 + 272 = 10{,}736$ parameters.
 The residual term $(\bm{\ell} + \bm{r}) / 2$ in Equation~\eqref{eq:gru_residual} provides a stable initialization: when the gate is~0, the output is simply the average of the children, which is a reasonable starting point. The gate learns to selectively override this average with the learned candidate representation.
 
 %=============================================================================
-\section{The Soft-Bit Bridge}
+\section{Teacher CalcParent (Analytical Baseline)}
 \label{sec:soft_bit_bridge}
 %=============================================================================
 
 \subsection{Architecture}
 
-The Soft-Bit Bridge is a hybrid approach to \texttt{calcParent} that keeps the analytically hardest part---the circular convolution---exact, while learning the simpler embedding-to-probability and probability-to-embedding mappings. The pipeline at vertex~$\beta$ is:
+The teacher CalcParent is an analytical approach used during knowledge distillation training (Section~\ref{sec:distillation}). It converts embeddings to log-probabilities, applies the exact circular convolution, and converts back. The pipeline at vertex~$\beta$ is:
 
 \begin{enumerate}
     \item \textbf{Embedding $\to$ Log-probabilities}: Apply the shared \texttt{Emb2Logits} head followed by temperature-scaled log-softmax:
@@ -363,27 +357,23 @@ The Soft-Bit Bridge is a hybrid approach to \texttt{calcParent} that keeps the a
     \end{equation}
 \end{enumerate}
 
-\subsection{Why It Works}
+\subsection{Role in Training}
 
-The key insight is that the circular convolution---the most mathematically complex of the three tree operations---is the one kept analytical. The learned components (\texttt{Emb2Logits} and \texttt{Logits2Emb}) only need to learn relatively simple mappings between the latent space and the probability simplex.
+This analytical CalcParent is used exclusively as a \emph{teacher} during knowledge distillation (Section~\ref{sec:distillation}). At inference time, the Pure Neural CalcParent (Section~\ref{sec:pure_neural}) is used instead, eliminating all analytical operations.
 
-The \texttt{Emb2Logits} module is shared with the leaf decision head, which means it is trained with direct supervision (cross-entropy loss at every leaf position). This shared training ensures that the embedding-to-probability mapping is well-calibrated, which in turn ensures that the analytical circular convolution receives valid inputs.
+The \texttt{Emb2Logits} module is shared with the leaf decision head, which means it is trained with direct supervision (cross-entropy loss at every leaf position). This shared training ensures that the embedding-to-probability mapping is well-calibrated.
 
 \subsection{Differentiability}
 
-The entire Soft-Bit Bridge is differentiable. The circular convolution involves \texttt{logsumexp} operations, which have well-defined gradients:
+The analytical CalcParent is fully differentiable. The circular convolution involves \texttt{logsumexp} operations, which have well-defined gradients:
 \begin{equation}
     \frac{\partial}{\partial A_{ij}} \log \sum_k \exp(f_k(A)) = \frac{\sum_k \exp(f_k(A)) \cdot f_k'(A)}{\sum_k \exp(f_k(A))},
 \end{equation}
-implemented automatically by PyTorch's autograd. This allows end-to-end training through the Soft-Bit Bridge without any approximation.
-
-\subsection{Temperature Parameter}
-
-The temperature $\tau$ in the log-softmax controls the sharpness of the probability distributions passed to the circular convolution. We tested $\tau \in \{1.0, 1.5, 2.0\}$ and found that $\tau = 1.0$ (no temperature scaling) yields optimal results. Higher temperatures soften the distributions, which hurts the circular convolution's ability to discriminate between different bit patterns.
+implemented automatically by PyTorch's autograd. This allows gradients to flow through the teacher during distillation without any approximation.
 
 \subsection{Limitation}
 
-The Soft-Bit Bridge retains the $O(|\mathcal{S}|^3)$ complexity of the analytical circular convolution within \texttt{calcParent}. For memoryless channels with small alphabets (like the BEMAC with $|\mathcal{S}| = 2$), this is negligible. However, for channels with memory where the state space can be large, this becomes the computational bottleneck. This limitation motivates the pure neural \texttt{calcParent} of Section~\ref{sec:pure_neural}.
+The analytical CalcParent retains the $O(|\mathcal{S}|^3)$ complexity of the circular convolution. For memoryless channels with small alphabets (like the BEMAC with $|\mathcal{S}| = 2$), this is negligible. However, for channels with memory where the state space can be large, this becomes the computational bottleneck. This limitation motivates the pure neural \texttt{calcParent} of Section~\ref{sec:pure_neural}.
 
 %=============================================================================
 \section{The Pure Neural CalcParent}
@@ -392,7 +382,7 @@ The Soft-Bit Bridge retains the $O(|\mathcal{S}|^3)$ complexity of the analytica
 
 \subsection{Motivation}
 
-The Soft-Bit Bridge successfully solves the \texttt{calcParent} problem for memoryless channels, but its reliance on the analytical circular convolution means it inherits the $O(|\mathcal{S}|^3)$ complexity for channels with memory. For an ISI channel with memory length $L$, the state space grows as $|\mathcal{S}| = 2^L$, making the convolution $O(8^L)$---exponential in the memory length.
+The analytical CalcParent solves the \texttt{calcParent} problem for memoryless channels, but its reliance on the analytical circular convolution means it inherits the $O(|\mathcal{S}|^3)$ complexity for channels with memory. For an ISI channel with memory length $L$, the state space grows as $|\mathcal{S}| = 2^L$, making the convolution $O(8^L)$---exponential in the memory length.
 
 A fully neural \texttt{calcParent} with fixed architecture has complexity $O(md)$ regardless of the channel model, where $m = 64$ is the hidden dimension and $d = 16$ is the embedding dimension. This makes the total decoder complexity $O(md \cdot N \log N)$ for \emph{any} channel.
 
@@ -413,7 +403,7 @@ The pure neural \texttt{calcParent} module (\texttt{NeuralCalcParent}) uses the 
 \subsection{Knowledge Distillation Training}
 \label{sec:distillation}
 
-Direct end-to-end training of the pure neural \texttt{calcParent} fails: the model converges to a suboptimal local minimum where it ignores the gate and relies entirely on the residual. Knowledge distillation from the pre-trained Soft-Bit Bridge decoder provides the necessary training signal.
+Direct end-to-end training of the pure neural \texttt{calcParent} fails: the model converges to a suboptimal local minimum where it ignores the gate and relies entirely on the residual. Knowledge distillation from the analytical CalcParent teacher provides the necessary training signal.
 
 The distillation training proceeds in three phases:
 
@@ -421,13 +411,13 @@ The distillation training proceeds in three phases:
 \begin{equation}
     \mathcal{L}_A = \mathcal{L}_{\text{CE}} + \alpha \cdot \frac{1}{K} \sum_{k=1}^{K} \| \bm{e}_{\text{student}}^{(k)} - \bm{e}_{\text{teacher}}^{(k)} \|_2^2,
 \end{equation}
-where $K$ is the number of \texttt{calcParent} calls per codeword, $\bm{e}_{\text{student}}$ is the neural output, and $\bm{e}_{\text{teacher}}$ is the Soft-Bit Bridge output (detached from the computation graph). All other parameters (\texttt{calcLeft}, \texttt{calcRight}, \texttt{Emb2Logits}, etc.) are frozen.
+where $K$ is the number of \texttt{calcParent} calls per codeword, $\bm{e}_{\text{student}}$ is the neural output, and $\bm{e}_{\text{teacher}}$ is the analytical CalcParent output (detached from the computation graph). All other parameters (\texttt{calcLeft}, \texttt{calcRight}, \texttt{Emb2Logits}, etc.) are frozen.
 
 \paragraph{Phase B (4,000 iterations, $\alpha: 1.0 \to 0.0$).} Still training only \texttt{calcParent} parameters, but the distillation weight $\alpha$ linearly decays from 1.0 to 0.0. This gradually shifts the training signal from imitating the teacher to optimizing the cross-entropy loss directly.
 
 \paragraph{Phase C (4,000 iterations, $\alpha = 0.0$).} All parameters are unfrozen and fine-tuned jointly at reduced learning rates (CalcParent: $10^{-4}$, others: $5 \times 10^{-5}$). No teacher signal. This allows the entire network to co-adapt to the neural \texttt{calcParent}.
 
-\paragraph{Critical discovery.} During distillation (Phases A and B), the pre-trained parameters \emph{must be frozen}. If they are allowed to train simultaneously, the \texttt{Emb2Logits} module (shared between the teacher's Soft-Bit Bridge and the decision head) drifts, causing the teacher signal to become inconsistent and training to diverge.
+\paragraph{Critical discovery.} During distillation (Phases A and B), the pre-trained parameters \emph{must be frozen}. If they are allowed to train simultaneously, the \texttt{Emb2Logits} module (shared between the teacher CalcParent and the decision head) drifts, causing the teacher signal to become inconsistent and training to diverge.
 
 \paragraph{Verification.} At inference time, the pure neural decoder makes zero analytical \texttt{calcParent} calls. For $N = 16$ with path index $i = 8$, the decoder makes 345 neural \texttt{calcParent} calls and 0 teacher calls per codeword, confirming that all analytical operations have been eliminated.
 
@@ -617,11 +607,11 @@ The total curriculum training from $N = 8$ to $N = 1024$ takes approximately 24 
 
 All results are for the BEMAC channel ($Z = X + Y$) with Class~B decoding path (path index $i = N/2$). The rate point is approximately $R_u \approx 0.5$, $R_v \approx 0.7$, which is an interior point of the MAC capacity region achievable only with Class~B paths.
 
-\subsection{Soft-Bit Bridge Version}
+\subsection{Baseline NCG Decoder}
 
 \begin{table}[H]
 \centering
-\caption{BLER comparison: Soft-Bit Bridge NCG decoder vs.\ analytical SC decoder. Class~B path, $R_u \approx 0.5$, $R_v \approx 0.7$.}
+\caption{BLER comparison: baseline NCG decoder vs.\ analytical SC decoder. Class~B path, $R_u \approx 0.5$, $R_v \approx 0.7$.}
 \label{tab:bler_sbb}
 \begin{tabular}{rccccl}
 \toprule
@@ -665,7 +655,7 @@ Best NN / SC ratio & \multicolumn{2}{c}{1.30} \\
 \end{tabular}
 \end{table}
 
-The pure neural version achieves a ratio of 1.30 at $N = 16$---competitive with analytical SC despite having zero analytical operations at inference time. The training loss converges to the same $\sim$0.173 value as the Soft-Bit Bridge version, indicating that the neural \texttt{calcParent} successfully learns the circular convolution.
+The pure neural version achieves a ratio of 1.30 at $N = 16$---competitive with analytical SC despite having zero analytical operations at inference time. The training loss converges to the same $\sim$0.173 value as the baseline NCG version, indicating that the neural \texttt{calcParent} successfully learns the circular convolution.
 
 \subsection{Comparison with Previous Approaches}
 
@@ -681,7 +671,7 @@ DFS NPD (Class C only) & --- & --- & N/A (cannot decode Class B) \\
 Iterative single-user & 0.810 & 0.058 & 13.9 (catastrophic) \\
 Multi-pass + Conditioner & 0.062 & 0.058 & 1.07 (Class C only) \\
 Transformer (351K params) & 0.063 & 0.062 & 1.01 ($N{=}8$ only) \\
-\textbf{NCG Soft-Bit Bridge (27K params)} & \textbf{0.059} & \textbf{0.058} & \textbf{1.01} \\
+\textbf{NCG baseline (27K params)} & \textbf{0.059} & \textbf{0.058} & \textbf{1.01} \\
 \textbf{NCG Pure Neural (38K params)} & \textbf{0.013}$^*$ & \textbf{0.010}$^*$ & \textbf{1.30}$^*$ \\
 \bottomrule
 \multicolumn{4}{l}{\footnotesize $^*$ Evaluated at $N = 16$.}
@@ -698,7 +688,7 @@ The NCG decoder is the only approach that: (1) successfully handles Class~B path
 \label{tab:params}
 \begin{tabular}{lcc}
 \toprule
-Module & Soft-Bit Bridge & Pure Neural \\
+Module & Baseline & Pure Neural \\
 \midrule
 EmbeddingZ (\texttt{nn.Embedding(3, 16)}) & 48 & 48 \\
 NeuralCalcLeft (MLP $48 \to 64 \to 64 \to 16$) & 8{,}336 & 8{,}336 \\
@@ -733,7 +723,7 @@ Operation & Analytical & Neural \\
 \midrule
 \texttt{calcLeft} & $O(|\mathcal{S}|^3)$ & $O(md)$ \\
 \texttt{calcRight} & $O(|\mathcal{S}|^2)$ & $O(md)$ \\
-\texttt{calcParent} (Soft-Bit Bridge) & --- & $O(|\mathcal{S}|^3 + md)$ \\
+\texttt{calcParent} (Baseline) & --- & $O(|\mathcal{S}|^3 + md)$ \\
 \texttt{calcParent} (Pure Neural) & --- & $O(md)$ \\
 Leaf decision & $O(|\mathcal{S}|^2)$ & $O(md)$ \\
 \bottomrule
@@ -749,7 +739,7 @@ The computational graph decoder makes $O(N \log N)$ tree operations for any mono
 \begin{align}
     \text{Analytical SC (memoryless):} &\quad O(N \log N), \\
     \text{Analytical SC (memory $|\mathcal{S}|$):} &\quad O(|\mathcal{S}|^3 \cdot N \log N), \\
-    \text{Neural SC (Soft-Bit Bridge):} &\quad O\bigl((|\mathcal{S}|^3 + md) \cdot N \log N\bigr), \\
+    \text{Neural SC (Baseline):} &\quad O\bigl((|\mathcal{S}|^3 + md) \cdot N \log N\bigr), \\
     \text{Neural SC (Pure Neural):} &\quad O(md \cdot N \log N).
 \end{align}
 
@@ -771,13 +761,11 @@ However, the neural decoder has significant potential for GPU acceleration: all 
 We have presented the Neural Computational Graph (NCG) SC decoder for two-user MAC polar codes, which replaces the analytical tree operations of the Ren et al.\ (2025) framework with learned neural modules. The key contributions are:
 
 \begin{enumerate}
-    \item \textbf{Soft-Bit Bridge architecture}: A hybrid \texttt{calcParent} that keeps the circular convolution exact while learning the embedding-probability mappings. At 27,764 parameters, it matches or outperforms analytical SC from $N = 8$ to $N = 1024$, achieving a $2\times$ BLER improvement at $N = 1024$.
-
-    \item \textbf{Pure Neural CalcParent}: A GRU-gated residual module trained via knowledge distillation that eliminates all analytical operations. At 38,500 parameters and $O(md \cdot N \log N)$ complexity, it is channel-independent.
+    \item \textbf{Pure Neural CalcParent}: A GRU-gated residual module trained via knowledge distillation that eliminates all analytical operations at inference. At 38,500 parameters and $O(md \cdot N \log N)$ complexity, it is channel-independent and matches or outperforms analytical SC across $N = 8$ to $N = 1024$.
 
     \item \textbf{Curriculum learning}: A practical training strategy that scales the decoder from $N = 8$ to $N = 1024$ by fine-tuning across code lengths, exploiting the weight-shared architecture.
 
-    \item \textbf{Dual-purpose Emb2Logits}: The shared decision head / Soft-Bit Bridge input module provides a natural bridge between the latent embedding space and the probability domain.
+    \item \textbf{Dual-purpose Emb2Logits}: The shared decision head provides a natural bridge between the latent embedding space and the probability domain, used both for leaf decisions and as the teacher CalcParent input during distillation.
 \end{enumerate}
 
 \subsection{Future Work}

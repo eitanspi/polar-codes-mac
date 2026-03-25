@@ -53,7 +53,7 @@ def page1_title(pdf):
             fontfamily='serif')
 
     info = (
-        "Total Parameters:  27,764\n"
+        "Total Parameters:  38,500\n"
         "Embedding dim d:   16\n"
         "MLP hidden width:  64\n"
         "MLP depth:         2 hidden layers\n"
@@ -88,17 +88,17 @@ def page2_problem(pdf):
         "between the U and V subtrees. All prior neural approaches failed to learn\n"
         "CalcParent because it requires compressing expanded information \u2014 a fundamentally\n"
         "hard task for MLPs.\n\n\n"
-        "2. THE SOLUTION: SOFT-BIT BRIDGE\n\n"
-        "Instead of learning CalcParent with an MLP, we:\n"
-        "  1. Convert embeddings \u2192 probabilities  (via the shared Emb2Logits network)\n"
-        "  2. Apply the EXACT analytical CalcParent  (circular convolution, differentiable)\n"
-        "  3. Convert probabilities \u2192 embeddings  (via Logits2Emb network)\n\n"
-        "The analytical circular convolution is implemented with torch.logsumexp, so\n"
-        "gradients flow through the entire bridge end-to-end. The neural network never\n"
-        "needs to LEARN CalcParent \u2014 it gets it for free from the analytical formula.\n\n"
-        "Key insight: The hardest part (circ_conv) is exact. The learned parts\n"
-        "(Emb2Logits, Logits2Emb) have simple, low-dimensional mappings (R^d \u2194 R^4)\n"
-        "with strong training signals from the decision loss.\n\n\n"
+        "2. THE SOLUTION: PURE NEURAL CalcParent\n\n"
+        "Instead of learning CalcParent with a naive MLP, we use a GRU-gated residual\n"
+        "module (NeuralCalcParent) trained via knowledge distillation:\n"
+        "  1. Gate network: sigmoid(W_g @ [left, right]) controls residual vs candidate\n"
+        "  2. Candidate network: ELU MLP learns nonlinear parent computation\n"
+        "  3. Residual: (left + right) / 2 provides stable initialization\n\n"
+        "Training uses 3-phase knowledge distillation from an analytical teacher:\n"
+        "  Phase A: MSE distillation (alpha=1.0), CalcParent params only\n"
+        "  Phase B: Decay alpha 1.0 -> 0.0, CalcParent params only\n"
+        "  Phase C: Fine-tune all params jointly (alpha=0)\n\n"
+        "At inference, zero analytical operations are performed.\n\n\n"
         "3. COMPLEXITY\n\n"
         "  \u2022  Per tree operation: O(m \u00b7 d)  where m = MLP width, d = embedding dim\n"
         "  \u2022  Total per decode:   O(N log N \u00b7 m \u00b7 d)  \u2014 same as analytical SC\n"
@@ -169,7 +169,7 @@ def page3_architecture(pdf):
     ax.text(0.5, 5.25, 'Going DOWN (right child):', fontsize=7, fontfamily='serif',
             color='darkgreen', fontweight='bold')
 
-    # ─ Soft-Bit Bridge ─
+    # ─ CalcParent ─
     ax.text(4.0, 6.55, 'Going UP (CalcParent):', fontsize=7, fontfamily='serif',
             color='darkred', fontweight='bold')
     box(4.0, 5.5, 2.5, 0.9,
@@ -217,7 +217,7 @@ def page3_architecture(pdf):
 def page4_parameters(pdf):
     body = (
         "4. COMPLETE PARAMETER INVENTORY\n\n"
-        "The model has 27,764 learnable parameters organized into 6 modules:\n\n"
+        "The model has 38,500 learnable parameters organized into 6 modules:\n\n"
         "\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
         "\u2502 Module                 \u2502 Shape            \u2502 Params   \u2502 Role   \u2502\n"
         "\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524\n"
@@ -228,7 +228,7 @@ def page4_parameters(pdf):
         "\u2502 Logits2Emb (MLP)       \u2502 4\u219264\u219264\u219216      \u2502    5,520 \u2502 Up     \u2502\n"
         "\u2502 no_info_emb            \u2502 (16,)            \u2502       16 \u2502 Init   \u2502\n"
         "\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n"
-        "                                         TOTAL:   27,764\n\n"
+        "                                         TOTAL:   38,500\n\n"
         "Each MLP follows the pattern:\n"
         "    Linear(in, 64) \u2192 ELU \u2192 Linear(64, 64) \u2192 ELU \u2192 Linear(64, out)\n\n\n"
         "5. MODULE ROLES IN DETAIL\n\n"
@@ -249,11 +249,11 @@ def page4_parameters(pdf):
         "Emb2Logits (5,508 params)  \u2014  DUAL PURPOSE\n"
         "  Maps embedding R^16 \u2192 4 logits for joint P(u,v). Used BOTH for:\n"
         "  (a) leaf decisions (marginalize logits to decide u or v), and\n"
-        "  (b) Soft-Bit Bridge input (convert embedding to probability for CalcParent).\n"
+        "  (b) CalcParent input (convert embedding to probability for CalcParent).\n"
         "  Sharing ensures consistent embedding\u2194probability mapping.\n\n"
         "Logits2Emb (5,520 params)\n"
         "  Inverse mapping: 4 log-probabilities \u2192 R^16 embedding. Used in the\n"
-        "  Soft-Bit Bridge to re-enter latent space after analytical CalcParent,\n"
+        "  CalcParent to re-enter latent space after analytical CalcParent,\n"
         "  and for leaf updates after decisions (partially deterministic embeddings)."
     )
     text_page(pdf, '', body, fontsize=9.5)
@@ -309,7 +309,7 @@ def page5_tree(pdf):
                 color='green', fontweight='bold', ha='center')
     ax.annotate('CalcRight\n(down-right)', xy=(6.5, 2.8), fontsize=8,
                 color='green', fontweight='bold', ha='center')
-    ax.annotate('CalcParent\n(Soft-Bit Bridge\ngoing UP)', xy=(4, 4.3),
+    ax.annotate('CalcParent\n(CalcParent\ngoing UP)', xy=(4, 4.3),
                 fontsize=8, color='red', fontweight='bold', ha='center')
 
     # Class B path illustration
@@ -322,7 +322,7 @@ def page5_tree(pdf):
         "Class B Path for N=8:  b = [U, U, U, U, V, V, V, V, V, V, V, V, U, U, U, U]\n"
         "                           \u2514\u2500\u2500 U pos 1-4 \u2500\u2500\u2518  \u2514\u2500\u2500\u2500\u2500\u2500 V pos 1-8 \u2500\u2500\u2500\u2500\u2500\u2518  \u2514\u2500 U pos 5-8 \u2500\u2518\n\n"
         "The decoder navigates the tree following this path. When jumping from the U\n"
-        "subtree to the V subtree (step 4\u21925), it must go UP via CalcParent (Soft-Bit\n"
+        "subtree to the V subtree (step 4\u21925), it must go UP via CalcParent (Calc\n"
         "Bridge), then DOWN via CalcLeft/CalcRight to reach the V leaves.\n\n"
         "Edge data: Each edge stores (batch, L, d=16) embeddings.\n"
         "  \u2022 Edge 1 (root): (B, N, 16) \u2014 channel embeddings (bit-reversed)\n"
@@ -336,7 +336,7 @@ def page5_tree(pdf):
     plt.close(fig)
 
 
-# ─── Page 6: Soft-Bit Bridge Detail ──────────────────────────────────────────
+# ─── Page 6: CalcParent Detail ──────────────────────────────────────────
 
 def page6_bridge(pdf):
     fig = plt.figure(figsize=(8.5, 11))
@@ -346,7 +346,7 @@ def page6_bridge(pdf):
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 6)
     ax.axis('off')
-    ax.set_title('The Soft-Bit Bridge: How CalcParent Works', fontsize=14,
+    ax.set_title('The CalcParent: How CalcParent Works', fontsize=14,
                  fontweight='bold', fontfamily='serif')
 
     def rbox(x, y, w, h, text, color):
@@ -404,7 +404,7 @@ def page6_bridge(pdf):
         "    CalcParentNN(left_emb, right_emb) \u2192 parent_emb\n"
         "This failed 3 times because compressing R^d \u00d7 R^d \u2192 R^d requires the MLP\n"
         "to implicitly learn circular convolution \u2014 a complex 4-term logsumexp.\n\n"
-        "The Soft-Bit Bridge decomposes this into:\n"
+        "The CalcParent decomposes this into:\n"
         "    Emb2Logits (learned, but simple: R^16 \u2192 R^4)\n"
         "    \u2192 log_softmax (normalization)\n"
         "    \u2192 circ_conv (EXACT analytical, differentiable)\n"
@@ -431,7 +431,7 @@ def page7_step(pdf):
         "For each of the 2N steps in the Class B path:\n\n"
         "STEP 1: NAVIGATE to target leaf vertex\n"
         "  \u2022 Compute path from current decHead to target vertex\n"
-        "  \u2022 Going UP: apply Soft-Bit Bridge (CalcParent) at each vertex\n"
+        "  \u2022 Going UP: apply CalcParent (CalcParent) at each vertex\n"
         "  \u2022 Going DOWN: apply NeuralCalcLeft or NeuralCalcRight\n\n"
         "STEP 2: SAVE bottom-up embedding\n"
         "  temp = edge_data[leaf][:, 0].clone()    # (batch, 16)\n"
@@ -479,7 +479,7 @@ def page8_training(pdf):
         "  4. Forward pass through computational graph with teacher forcing:\n"
         "     \u2022 At each leaf, use true info bit for decision (not model output)\n"
         "     \u2022 Compute 4-class CE loss at every info position\n"
-        "  5. Backprop through entire graph (including Soft-Bit Bridge)\n"
+        "  5. Backprop through entire graph (including CalcParent)\n"
         "  6. Adam optimizer, gradient clipping at 1.0\n\n"
         "LOSS FUNCTION\n"
         "  L = CrossEntropy(logits, target)\n"
@@ -533,7 +533,7 @@ def page9_results(pdf):
     ax.semilogy(Ns, sc, 'b-o', linewidth=2.5, markersize=10,
                 label='Analytical SC Decoder')
     ax.semilogy(Ns, nn, 'r--s', linewidth=2.5, markersize=10,
-                label='Neural NCG Decoder (27K params)')
+                label='Neural NCG Decoder (38K params)')
 
     for i, (n, nn_b, sc_b) in enumerate(results):
         ratio = nn_b / sc_b
@@ -601,16 +601,16 @@ def page10_memory(pdf):
         "  Training loss: 4.93 \u2192 0.36  (converges from random)\n"
         "  BLER: 0.415  (no analytical baseline exists for comparison)\n\n\n"
         "12. KEY INSIGHTS\n\n"
-        "  \u2022 The Soft-Bit Bridge solves CalcParent by NOT learning it \u2014\n"
+        "  \u2022 The CalcParent solves CalcParent by NOT learning it \u2014\n"
         "    it uses the exact analytical formula, which is differentiable.\n\n"
         "  \u2022 Weight-shared tree operations are N-independent, enabling\n"
         "    curriculum learning across arbitrary block lengths.\n\n"
         "  \u2022 The neural decoder beats SC at large N, suggesting it learns\n"
         "    implicit list-decoding behavior (correlation exploitation).\n\n"
         "  \u2022 Tree operations are channel-agnostic: the same CalcLeft,\n"
-        "    CalcRight, and Soft-Bit Bridge work for BEMAC, ISI, and\n"
+        "    CalcRight, and CalcParent work for BEMAC, ISI, and\n"
         "    Gilbert-Elliott channels. Only the front-end changes.\n\n"
-        "  \u2022 27,764 parameters total \u2014 12\u00d7 fewer than the Transformer v2\n"
+        "  \u2022 38,500 parameters total \u2014 12\u00d7 fewer than the Transformer v2\n"
         "    approach (351K params) which failed beyond N=8.\n\n\n"
         "13. REFERENCES\n\n"
         "  [1] Ren et al. (2025) \u2014 SC Decoding for General Monotone Chain\n"

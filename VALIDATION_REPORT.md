@@ -22,7 +22,7 @@
 - [x] `neural.ncg_memory` -- OK
 - [x] `neural.neural_comp_graph` -- OK
 - [x] `neural.channels_memory` -- OK
-- [x] `neural.train` -- OK
+- [x] `neural.train_pure_neural` -- OK
 - [x] `design` (root-level) -- OK
 - [x] `polar/__init__.py` re-exports -- all resolve correctly
 - [x] `neural/__init__.py` -- OK (docs only, no re-exports)
@@ -98,10 +98,10 @@
 
 ## 3. Neural Module: PASS
 
-- [x] `NeuralCompGraphDecoder(d=16, vocab_size=3)` -- instantiates (27,764 params)
+- [x] `NeuralCompGraphDecoder(d=16, vocab_size=3)` -- instantiates
 - [x] `NCGMemoryDecoder(d=16, hidden=64, ...)` -- instantiates
 - [x] `channels_memory.py` -- ISI_MAC and GilbertElliott_MAC classes present
-- [x] `train.py` -- exports `main`, `train_full`, `evaluate`, `evaluate_nn`, `evaluate_sc`
+- [x] `train_pure_neural.py` -- distillation training for Pure Neural CalcParent
 - [x] All 8 saved models (.pt) load successfully into NeuralCompGraphDecoder
 - [x] Model files: ncg_N8_d16.pt through ncg_N1024_bler_sweep.pt
 
@@ -162,7 +162,7 @@
 - [x] Quick Start commands reference real scripts
 - [x] Channel descriptions accurate
 - [x] Decoder descriptions accurate
-- [x] Neural architecture table accurate (27,764 params confirmed)
+- [x] Neural architecture table accurate
 
 ### Minor issues
 - **[MINOR]** README lists `pip install numpy matplotlib` as required but does not mention numba as optional dependency for parallel decoder. The Quick Start section doesn't mention it.

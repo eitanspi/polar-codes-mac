@@ -1,15 +1,14 @@
 """
 ncg_pure_neural.py — Neural Computational Graph SC Decoder with PURE NEURAL CalcParent.
 
-Replaces the Soft-Bit Bridge (emb -> prob -> analytical circ_conv -> prob -> emb)
-with a learned GRU-style gated residual module:
+Uses a learned GRU-style gated residual module for CalcParent:
 
     NeuralCalcParent: R^d x R^d -> R^d  (O(md) complexity, channel-independent)
 
 The second-half of parent (parent[l:]) is kept as the right child embedding,
 which mirrors the polar code structure (not channel-dependent).
 
-Supports knowledge distillation from the analytical Soft-Bit Bridge teacher
+Supports knowledge distillation from the analytical CalcParent teacher
 during training.
 """
 
@@ -95,8 +94,7 @@ class PureNeuralCompGraphDecoder(nn.Module):
     """
     Neural SC Decoder with PURE NEURAL CalcParent.
 
-    Same as NeuralCompGraphDecoder but CalcParent is a learned GRU-gated MLP
-    instead of the Soft-Bit Bridge with analytical circ_conv.
+    CalcParent is a learned GRU-gated MLP instead of analytical circ_conv.
 
     Supports knowledge distillation: when distill_alpha > 0, also computes
     teacher (analytical) CalcParent output and returns MSE for distillation loss.
@@ -129,7 +127,7 @@ class PureNeuralCompGraphDecoder(nn.Module):
         # Decision head
         self.emb2logits = _make_mlp(d, hidden, 4, n_layers)
 
-        # Soft-Bit Bridge components (for teacher / distillation and leaf embedding)
+        # Re-embedding (for teacher distillation and leaf embedding)
         self.logits2emb = _make_mlp(4, hidden, d, n_layers)
 
         # Combine
@@ -177,7 +175,7 @@ class PureNeuralCompGraphDecoder(nn.Module):
 
     def _teacher_calc_parent(self, beta, edge_data):
         """
-        Teacher (analytical Soft-Bit Bridge) CalcParent.
+        Teacher (analytical) CalcParent.
         Returns the teacher embedding WITHOUT modifying edge_data.
         """
         left = edge_data[2 * beta]

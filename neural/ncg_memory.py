@@ -6,7 +6,7 @@ Architecture:
      - Bidirectional GRU captures temporal dependencies (channel memory)
      - Replaces the discrete EmbeddingZ lookup table
   2. Tree Operations: Unchanged from neural_comp_graph.py
-     - NeuralCalcLeft, NeuralCalcRight, Soft-Bit Bridge
+     - NeuralCalcLeft, NeuralCalcRight, CalcParent
      - Completely independent of channel memory/state space
   3. Complexity: O(md N log N) — independent of channel state space size S
 
@@ -77,7 +77,7 @@ class NCGMemoryDecoder(nn.Module):
     n_layers : MLP depth
     gru_dim  : GRU hidden dimension for sequence encoder
     n_gru    : number of GRU layers
-    tau      : temperature for Soft-Bit Bridge
+    tau      : temperature for CalcParent
     """
 
     def __init__(self, d=16, hidden=64, n_layers=2, gru_dim=32, n_gru=1,

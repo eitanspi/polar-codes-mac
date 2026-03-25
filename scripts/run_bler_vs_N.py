@@ -226,7 +226,7 @@ def plot_results(results):
     ax.semilogy(Ns, sc, 'b-o', linewidth=2.5, markersize=10,
                 label='Analytical SC Decoder', zorder=5)
     ax.semilogy(Ns, nn, 'r--s', linewidth=2.5, markersize=10,
-                label='Neural NCG Decoder (27K params)', zorder=5)
+                label='Neural NCG Decoder', zorder=5)
 
     for i, r in enumerate(valid):
         if r['sc_bler'] > 0:

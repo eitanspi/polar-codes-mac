@@ -19,30 +19,26 @@ The unified SC decoder (`polar/decoder.py`) auto-dispatches based on path type:
 ### SCL Decoder
 SC List decoder (`polar/decoder_scl.py`) with configurable list size L for improved error performance.
 
-### Neural Computational Graph (NCG) + Soft-Bit Bridge Decoder
-Replaces analytical tree operations with learned MLPs (27,764 parameters, O(N log N)):
+### Neural SC Decoder — Pure Neural CalcParent
+
+A fully neural decoder (`neural/ncg_pure_neural.py`) that eliminates all analytical operations at inference. The CalcParent operation is replaced by a GRU-style gated residual module (`NeuralCalcParent`), giving O(md) complexity per tree operation with zero dependence on channel structure.
+
+**Architecture** (38,500 parameters total):
 
 | Module | Input / Output | Purpose |
 |--------|---------------|---------|
 | EmbeddingZ | z in {0,1,2} -> R^d | Channel observation embedding |
 | NeuralCalcLeft | R^(3d) -> R^d | Replaces analytical f-node (calcLeft) |
 | NeuralCalcRight | R^(3d) -> R^d | Replaces analytical g-node (calcRight) |
-| Emb2Logits | R^d -> R^4 | Shared head: leaf decisions + bridge input |
-| Logits2Emb | R^4 -> R^d | Re-embed after analytical circ_conv |
+| NeuralCalcParent | R^(2d) -> R^d | GRU-gated residual for calcParent |
+| Emb2Logits | R^d -> R^4 | Shared decision head |
+| Logits2Emb | R^4 -> R^d | Re-embed log-probabilities |
 
-The **Soft-Bit Bridge** solves the CalcParent problem for interleaved (Class B) paths by converting embeddings to log-probabilities, applying analytical circular convolution (differentiable via `torch.logsumexp`), and re-embedding. This achieves strong BLER ratios but the analytical `circ_conv` scales as O(S^3) for channels with memory (alphabet size S), limiting generality.
-
-### Pure Neural CalcParent Decoder
-
-A fully neural decoder (`neural/ncg_pure_neural.py`) that eliminates all analytical operations at inference. The CalcParent operation is replaced by a GRU-style gated residual module (`NeuralCalcParent`), giving O(md) complexity per tree operation with zero dependence on channel structure.
-
-**Architecture** (38,500 parameters total):
 - `NeuralCalcParent`: GRU-gated MLP that takes left and right child embeddings and produces the parent embedding. Uses a gate network (sigmoid) and candidate network (ELU MLP) with an averaging residual connection.
-- All other tree operations (CalcLeft, CalcRight, Emb2Logits, Logits2Emb) are shared with the Soft-Bit Bridge decoder.
 - The model is N-independent: the same 38.5K weights decode any block length.
 
 **Training — Knowledge Distillation**:
-- **Phase A** (teacher guidance): Train only CalcParent parameters with `distill_alpha=1.0`. The teacher is the analytical Soft-Bit Bridge CalcParent, providing MSE supervision on the parent embeddings.
+- **Phase A** (teacher guidance): Train only CalcParent parameters with `distill_alpha=1.0`. The teacher provides MSE supervision on the parent embeddings.
 - **Phase B** (teacher decay): Still training only CalcParent, but `distill_alpha` decays from 1.0 to 0.0, weaning the student off the teacher.
 - **Phase C** (pure neural): All parameters fine-tuned jointly at low learning rate with `distill_alpha=0`. The model now runs with zero analytical operations.
 - **Curriculum scaling**: After training at N=16, the model is fine-tuned at progressively larger N (32, 64, 128, 256, 512, 1024) using the previous checkpoint as initialization.
@@ -97,9 +93,8 @@ polar/                       # Core polar code library
     _decoder_numba.py        # Numba-compiled decoder internals
     eval.py                  # BER / BLER Monte Carlo evaluation pipeline
 neural/                      # Neural decoder
-    neural_comp_graph.py     # NCG + Soft-Bit Bridge decoder (27K params)
+    neural_comp_graph.py     # Baseline NCG decoder (27K params)
     ncg_pure_neural.py       # Pure Neural CalcParent decoder (38K params, zero analytical ops)
-    train.py                 # Training script for Soft-Bit Bridge decoder
     train_pure_neural.py     # Distillation training for Pure Neural CalcParent
     scale_pure_neural.py     # Curriculum scaling N=32/64/128
     scale_large.py           # Memory-lean curriculum scaling N=256/512/1024
@@ -138,16 +133,10 @@ bash scripts/run_all_gmac_designs.sh
 python scripts/simulate_gmac.py
 ```
 
-### Train a neural model
+### Train the Pure Neural CalcParent decoder
 
 ```bash
-python -m neural.train --phase all --N 16
-```
-
-### Evaluate a pre-trained model
-
-```bash
-python -m neural.train --phase eval --N 16
+python -m neural.train_pure_neural --N 16
 ```
 
 ## Monotone Chain Paths

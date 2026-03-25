@@ -13,7 +13,7 @@
 2. [What I Inherited](#2-what-i-inherited)
 3. [Constraints Given to Me](#3-constraints-given-to-me)
 4. [Architecture Design Process](#4-architecture-design-process)
-5. [The Winning Architecture: NCG + Soft-Bit Bridge](#5-the-winning-architecture-ncg--soft-bit-bridge)
+5. [The Winning Architecture: NCG Decoder](#5-the-winning-architecture-ncg-decoder)
 6. [Hour-by-Hour Execution Log](#6-hour-by-hour-execution-log)
 7. [What Worked](#7-what-worked)
 8. [What Didn't Work](#8-what-didnt-work)
@@ -88,7 +88,7 @@ CalcParent is fundamentally unlearnable by MLPs. Three separate approaches (dire
 2. **O(md) per node**: Tree operations must be independent of channel memory/alphabet size
 3. **Adopt the 2025 computational graph**: Pointer-based traversal (decHead, stepTo, getPath)
 4. **Neuralize calcLeft/calcRight**: MLPs in fixed-size latent space R^d
-5. **Solve CalcParent without naive MLP**: Choose from Soft-Bit Bridge, GRU, or SSM
+5. **Solve CalcParent without naive MLP**: Choose from analytical circ_conv bridge, GRU, or SSM
 6. **Fail fast**: Overfit micro-batch first, then scale
 
 ---
@@ -119,7 +119,7 @@ I spent the first two hours reading every relevant file in the codebase:
 
 After analysis, I made several key decisions:
 
-**Decision 1: Use Idea A (Soft-Bit Bridge) for CalcParent.**
+**Decision 1: Use Idea A (analytical circ_conv bridge) for CalcParent.**
 Reasoning: CalcParent in the analytical decoder operates on (2,2) probability tensors via circular convolution. This is a well-defined, differentiable operation. Rather than trying to learn compression in latent space (which failed 3 times in Sessions 1-2), I would:
 - Convert embeddings → probabilities (via the SAME emb2logits used for decisions)
 - Apply EXACT analytical circ_conv (which is differentiable via `torch.logsumexp`)
@@ -128,7 +128,7 @@ Reasoning: CalcParent in the analytical decoder operates on (2,2) probability te
 This bypasses the compression problem entirely. The neural network never needs to learn CalcParent — it uses the analytical formula. The learned parts (emb2logits, logits2emb) are simple mappings between representations.
 
 **Decision 2: Shared Emb2Logits.**
-The same module converts embeddings to 4-class logits for both leaf decisions AND the Soft-Bit Bridge input. This ensures the model learns a consistent embedding→probability mapping, which is critical for CalcParent accuracy.
+The same module converts embeddings to 4-class logits for both leaf decisions AND the CalcParent bridge input. This ensures the model learns a consistent embedding→probability mapping, which is critical for CalcParent accuracy.
 
 **Decision 3: Additive leaf combination.**
 The analytical decoder combines top-down and bottom-up messages via `norm_prod` (probability multiplication). In latent space, this corresponds to addition (log-domain multiplication = addition). So I used `combined = top_down + temp` instead of a learned CombineNN. Simpler architectures generalize better.
@@ -144,7 +144,7 @@ Unlike fast_ce (which parallelizes across tree levels), I follow the actual Clas
 
 ---
 
-## 5. The Winning Architecture: NCG + Soft-Bit Bridge
+## 5. The Winning Architecture: NCG Decoder
 
 ### Module Inventory
 
@@ -164,7 +164,7 @@ NeuralCompGraphDecoder (27,764 parameters, d=16, hidden=64)
 For each of 2N steps in the Class B path:
 
 1. NAVIGATE to target leaf vertex
-   ├── Going UP:   Soft-Bit Bridge CalcParent
+   ├── Going UP:   CalcParent (analytical circ_conv bridge)
    │   emb2logits(child_emb) → log_softmax → analytical circ_conv → logits2emb
    └── Going DOWN: NeuralCalcLeft or NeuralCalcRight
        MLP(parent_first, parent_second, sibling) → child_emb
@@ -185,7 +185,7 @@ For each of 2N steps in the Class B path:
    logits2emb(decision_log_probs) → new leaf embedding
 ```
 
-### Differentiable Circular Convolution (for Soft-Bit Bridge)
+### Differentiable Circular Convolution (for CalcParent)
 
 ```python
 def circ_conv_torch(A, B):
@@ -198,7 +198,7 @@ def circ_conv_torch(A, B):
     out[..., 1, 1] = logsumexp([A11+B00, A10+B01, A01+B10, A00+B11])
 ```
 
-This is the analytical CalcParent operation, implemented in PyTorch with full gradient support. The key insight: `torch.logsumexp` is differentiable, so gradients flow through the analytical operation. The neural network never needs to LEARN CalcParent — it gets it for free.
+This is the CalcParent operation, implemented in PyTorch with full gradient support. The key insight: `torch.logsumexp` is differentiable, so gradients flow through the analytical operation. The neural network never needs to LEARN CalcParent — it gets it for free.
 
 ---
 
@@ -210,7 +210,7 @@ This is the analytical CalcParent operation, implemented in PyTorch with full gr
 - Read encoder.py, channels.py, design.py, design_mc.py, eval.py
 - Read NPDforCourse reference implementation
 - Identified that computational graph operations have different signatures from NPD modules
-- Designed the Soft-Bit Bridge architecture
+- Designed the CalcParent architecture
 
 ### Hour 2–3: Implementation
 - Wrote `nn_mac/neural_comp_graph.py` (~260 lines):
@@ -269,7 +269,7 @@ This is the analytical CalcParent operation, implemented in PyTorch with full gr
 
 ## 7. What Worked
 
-### 7.1 The Soft-Bit Bridge (CalcParent Solution)
+### 7.1 The CalcParent Solution
 This was the single most important design decision. By routing CalcParent through:
 ```
 embedding → emb2logits → log_softmax → analytical circ_conv → logits2emb → embedding
@@ -322,7 +322,7 @@ At N=8-32, the neural decoder actually **beats** the analytical SC decoder at lo
 ### 8.4 N=64 at Lower Rate Point
 **What happened**: Ru=0.5, Rv=0.703: ratio=1.83. Not a failure but a gap compared to the N≤32 results where we match or beat SC.
 
-**Why**: At N=64, the computation graph has 128 sequential steps. The cumulative approximation error through multiple CalcParent bridges becomes noticeable. The Soft-Bit Bridge is not exact in the neural version — the emb2logits→logits2emb round-trip introduces information loss. At N≤32 (≤64 steps), this is manageable. At N=64 (128 steps), the lower rate point (more ambiguous positions) exposes the accumulated error.
+**Why**: At N=64, the computation graph has 128 sequential steps. The cumulative approximation error through multiple CalcParent bridges becomes noticeable. The CalcParent bridge is not exact in the neural version — the emb2logits→logits2emb round-trip introduces information loss. At N≤32 (≤64 steps), this is manageable. At N=64 (128 steps), the lower rate point (more ambiguous positions) exposes the accumulated error.
 
 ### 8.5 Approaches Not Attempted
 Due to time constraints, I did not try:
@@ -336,7 +336,7 @@ Due to time constraints, I did not try:
 
 ## 9. Complete Results Table
 
-### Main Results: NCG + Soft-Bit Bridge
+### Main Results: NCG Decoder
 
 | N | Rate Point | ku | kv | NN BLER | SC BLER | Ratio | Status | Training |
 |---|-----------|----|----|---------|---------|-------|--------|----------|
@@ -358,14 +358,14 @@ Due to time constraints, I did not try:
 | 2 | Multi-pass + Cond. | 73,540 | 7.32 | 1.82 | O(N log N) |
 | 2 | Iterative | 64,465 | 14.4 | — | O(N log N) |
 | 2 | Transformer v2 | 351,425 | 1.01 | 0.93 | O(N²) |
-| **3** | **NCG + Soft-Bit** | **27,764** | **0.93** | **1.02** | **O(N log N)** |
+| **3** | **NCG decoder** | **27,764** | **0.93** | **1.02** | **O(N log N)** |
 
 ### Cross-Session Comparison (N=16 Class B)
 
 | Session | Approach | Ru=0.5 ratio | Ru=0.625 ratio |
 |---------|----------|-------------|---------------|
 | 2 | Transformer + SS | 60.2 | 2.13 |
-| **3** | **NCG + Soft-Bit** | **0.81** | **1.01** |
+| **3** | **NCG decoder** | **0.81** | **1.01** |
 
 The Transformer collapsed from ratio 1.01 at N=8 to 60.2 at N=16.
 The NCG decoder **improved** from ratio 0.93 at N=8 to 0.81 at N=16.
@@ -435,7 +435,7 @@ The problem: circular convolution is a complex operation (logsumexp of XOR-index
 - With teacher forcing, the MLP can "cheat" by learning identity (CalcParentNN = pass-through), which gives zero training loss but fails at inference
 - Without teacher forcing, cascade errors prevent learning
 
-### Why the Soft-Bit Bridge Works
+### Why the CalcParent Bridge Works
 
 The bridge decomposes CalcParent into three simple, separately trainable steps:
 1. **emb2logits** (shared with decision head): This is already being trained by the classification loss at every leaf. The model MUST learn accurate embedding→probability mapping to minimize the decision loss. This training signal is strong and direct.
@@ -455,7 +455,7 @@ The 4-class joint output P(u,v) captures u-v correlation, which the analytical d
 
 ### Why N=64 Has a Gap at Low Rate
 
-At N=64, the computation graph has 128 sequential steps. The Soft-Bit Bridge is called O(log N) = O(6) times per tree jump, and there are O(N) = O(64) leaf visits. Each bridge introduces a small approximation error (emb2logits is not perfect). Over 128 steps, these errors accumulate.
+At N=64, the computation graph has 128 sequential steps. CalcParent is called O(log N) = O(6) times per tree jump, and there are O(N) = O(64) leaf visits. Each bridge introduces a small approximation error (emb2logits is not perfect). Over 128 steps, these errors accumulate.
 
 At the lower rate point (more info bits, more decisions), there are more opportunities for error propagation. At the higher rate point (fewer info bits), many positions are frozen (no decision, no error), so the error accumulation is limited.
 
@@ -506,7 +506,7 @@ def forward(z, b, frozen_u, frozen_v, u_true=None, v_true=None):
         edge_data[leaf_edge] = new_emb
 ```
 
-### Soft-Bit Bridge CalcParent Pseudocode
+### CalcParent Pseudocode
 
 ```python
 def soft_bit_calc_parent(beta, edge_data):
@@ -553,13 +553,13 @@ def soft_bit_calc_parent(beta, edge_data):
 The Ru=0.5 ratio at N=64 is 1.83. Potential fixes:
 - **Scheduled sampling**: Train with a mix of teacher forcing and model predictions. This exposes the model to its own errors during training, reducing the train-test gap.
 - **Longer curriculum fine-tuning**: 20K iterations may not be enough at N=64 (128 steps).
-- **Temperature scaling in Soft-Bit Bridge**: Use `log_softmax(logits / τ)` with τ > 1 to keep distributions smoother, reducing information loss in the emb2logits→logits2emb round-trip.
+- **Temperature scaling in CalcParent**: Use `log_softmax(logits / τ)` with τ > 1 to keep distributions smoother, reducing information loss in the emb2logits→logits2emb round-trip.
 
 ### 13.2 Scaling to N=128, 256, 1024 (Priority: High)
 Continue the curriculum chain. Expected challenges:
 - Training time scales linearly with N (128 steps at N=64, 256 at N=128)
 - May need GPU acceleration for N≥256
-- The Soft-Bit Bridge error may accumulate more at larger N
+- The CalcParent bridge error may accumulate more at larger N
 
 ### 13.3 Extension to Gaussian MAC (Priority: High)
 The architecture is channel-agnostic. For GMAC:
@@ -572,7 +572,7 @@ The architecture is channel-agnostic. For GMAC:
 For channels like Gilbert-Elliott or ISI:
 - EmbeddingZ processes a sequence of channel outputs (possibly with an RNN/conv encoder)
 - Tree operations remain the same (latent space, O(md))
-- The Soft-Bit Bridge CalcParent remains the same (analytical circ_conv on 2×2)
+- CalcParent remains the same (analytical circ_conv on 2x2)
 - Training data comes from channel simulation, not analytical formulas
 - Complexity: O(md N log N) vs O(S³ N log N) for analytical decoder
 
@@ -602,7 +602,7 @@ This mirrors the analytical g-node's structure and might improve accuracy at lar
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `nn_mac/neural_comp_graph.py` | ~260 | Core decoder: modules, forward pass, Soft-Bit Bridge |
+| `nn_mac/neural_comp_graph.py` | ~260 | Core decoder: modules, forward pass, CalcParent |
 | `nn_mac/train_ncg.py` | ~200 | Training pipeline: overfit test, full training, evaluation |
 | `research_log_30hr.md` | ~170 | Research log (previous version) |
 | `session3_report.md` | this file | Comprehensive report |

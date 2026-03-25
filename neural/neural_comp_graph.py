@@ -4,13 +4,15 @@ neural_comp_graph.py — Neural Computational Graph SC Decoder for MAC Polar Cod
 Implements the O(N log N) computational graph from Ren et al. (2025) with
 neural replacements for the tree operations:
 
-  - NeuralCalcLeft:  MLP replaces analytical calcLeft  (circ_conv + norm_prod)
-  - NeuralCalcRight: MLP replaces analytical calcRight (norm_prod + circ_conv)
-  - Soft-Bit Bridge for calcParent: emb→prob (shared Emb2Logits) →
-        analytical circ_conv (differentiable) → prob→emb (Logits2Emb)
+  - NeuralCalcLeft:  MLP replaces analytical calcLeft
+  - NeuralCalcRight: MLP replaces analytical calcRight
+  - CalcParent: emb→prob (Emb2Logits) → analytical circ_conv → prob→emb (Logits2Emb)
 
 Complexity: O(N log N · md) where m=hidden, d=embedding dim.
 Node operations are O(md), independent of channel memory/alphabet size.
+
+NOTE: This is the baseline NCG decoder. For the production decoder with
+fully neural CalcParent (zero analytical ops), see ncg_pure_neural.py.
 
 Public API:
     model = NeuralCompGraphDecoder(d=16, hidden=64)
@@ -37,7 +39,7 @@ def _make_mlp(in_dim, hidden, out_dim, n_layers=2):
     return nn.Sequential(*layers)
 
 
-# ─── Differentiable circular convolution (for Soft-Bit Bridge) ───────────────
+# ─── Differentiable circular convolution (for CalcParent) ────────────────────
 
 def circ_conv_torch(A, B):
     """
@@ -75,7 +77,7 @@ class NeuralCompGraphDecoder(nn.Module):
         super().__init__()
         self.d = d
         self.use_combine_nn = use_combine_nn
-        self.tau = tau  # temperature for Soft-Bit Bridge log_softmax
+        self.tau = tau  # temperature for CalcParent log_softmax
 
         # Channel embedding: z ∈ {0..vocab_size-1} → R^d
         self.embedding_z = nn.Embedding(vocab_size, d)
@@ -85,10 +87,10 @@ class NeuralCompGraphDecoder(nn.Module):
         self.calc_right_nn = _make_mlp(3 * d, hidden, d, n_layers)
 
         # Decision head: R^d → R^4 joint logits P(u,v)
-        # Shared for leaf decisions AND Soft-Bit Bridge (calcParent input)
+        # Shared for leaf decisions AND calcParent input
         self.emb2logits = _make_mlp(d, hidden, 4, n_layers)
 
-        # Soft-Bit Bridge: R^4 log-probs → R^d embedding
+        # CalcParent re-embedding: R^4 log-probs → R^d embedding
         self.logits2emb = _make_mlp(4, hidden, d, n_layers)
 
         # Combine top-down + bottom-up at leaf (MLP or additive)
@@ -125,10 +127,10 @@ class NeuralCompGraphDecoder(nn.Module):
 
     def _soft_bit_calc_parent(self, beta, edge_data):
         """
-        Soft-Bit Bridge calcParent at vertex β.
-        1. Emb → log-probs (shared emb2logits + log_softmax)
+        CalcParent at vertex beta.
+        1. Emb -> log-probs (shared emb2logits + log_softmax)
         2. Analytical circ_conv (differentiable)
-        3. Log-probs → Emb (logits2emb)
+        3. Log-probs -> Emb (logits2emb)
         """
         left = edge_data[2 * beta]           # (B, l, d)
         right = edge_data[2 * beta + 1]      # (B, l, d)
@@ -162,7 +164,7 @@ class NeuralCompGraphDecoder(nn.Module):
                 self._neural_calc_right(current, edge_data)
             return beta
         elif beta == current >> 1:
-            # Going UP → Soft-Bit Bridge
+            # Going UP → CalcParent
             self._soft_bit_calc_parent(current, edge_data)
             return beta
         else:

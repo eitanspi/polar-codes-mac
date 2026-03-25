@@ -8,14 +8,14 @@
 
 ---
 
-## Architecture: Neural Computational Graph + Soft-Bit Bridge
+## Architecture: Neural Computational Graph
 
 ### Key Insight
 Previous approaches failed because:
 1. **DFS-based NPD** can't follow interleaved Class B path (CalcParent unlearnable by MLP)
 2. **Transformer v2** works at N=8 but is O(N²) and fails at N=16 (error cascade in 32-step AR)
 
-**Solution**: Use the 2025 paper's computational graph skeleton with neural tree operations + Soft-Bit Bridge for CalcParent.
+**Solution**: Use the 2025 paper's computational graph skeleton with neural tree operations.
 
 ### Architecture Components (neural_comp_graph.py)
 
@@ -30,7 +30,7 @@ Previous approaches failed because:
 
 **Total: 27,764 parameters (d=16, hidden=64, n_layers=2)**
 
-### Soft-Bit Bridge (CalcParent)
+### CalcParent
 **The key innovation solving the CalcParent trap:**
 1. Convert children embeddings → log-probabilities: `log_softmax(emb2logits(child_emb))`
 2. Apply **analytical** circular convolution (differentiable via `torch.logsumexp`)
@@ -70,7 +70,7 @@ Gradients flow through the entire bridge:
 | Multi-pass + Conditioner | 8 | 73,540 | 7.32 | O(N log N) | No |
 | Iterative single-user | 8 | 64,465 | 14.4 | O(N log N) | No |
 | Transformer v2 | 8 | 351,425 | 0.93 | **O(N²)** | No (60.2 at N=16) |
-| **NCG + Soft-Bit Bridge** | **64** | **27,764** | **0.81** | **O(N log N)** | **Yes** |
+| **NCG decoder** | **64** | **27,764** | **0.81** | **O(N log N)** | **Yes** |
 
 ---
 
@@ -105,7 +105,7 @@ The from-scratch models without the overfit warm-up can't even learn (loss stuck
 1. Weight-shared tree operations (CalcLeft, CalcRight) are N-independent
 2. A model trained at N=16 already knows how to process subtrees of size ≤16
 3. At N=32, the only new thing is combining two subtrees of size 16 — which uses the same operations
-4. The Soft-Bit Bridge maintains fidelity across scales
+4. CalcParent maintains fidelity across scales
 
 ### Why From-Scratch Fails at N≥32
 1. 64-step sequential computation graph has very long gradient paths
@@ -151,7 +151,7 @@ The neural decoder appears to learn implicit list-decoding behavior:
 The architecture is ready for the ultimate goal:
 - NeuralCalcLeft/Right operate in R^d, independent of channel memory/alphabet size S
 - EmbeddingZ extends trivially to larger alphabets (increase vocab_size)
-- Soft-Bit Bridge CalcParent uses same (2,2) circ_conv regardless of channel
+- CalcParent uses same (2,2) circ_conv regardless of channel
 - Complexity: O(N log N · md) vs O(S³ · N log N) for analytical decoder
 - Only changes needed: training data generation and channel model
 - The entire tree operation stack is channel-agnostic
@@ -192,11 +192,12 @@ The architecture is ready for the ultimate goal:
 
 **Solved the Class B neural MAC polar decoder problem** with:
 1. Neural Computational Graph architecture following the 2025 Ren et al. skeleton
-2. Soft-Bit Bridge for CalcParent (analytical circ_conv between embedding spaces)
+2. Analytical circ_conv for CalcParent (between embedding spaces)
 3. Curriculum learning for scaling (N=8 → 16 → 32 → 64)
 4. O(N log N · md) complexity — no O(N²) or O(S³) operations
-5. Single 27K-parameter model matches/beats analytical SC at N=8,16,32,64
+5. Single 27K-parameter baseline model matches/beats analytical SC at N=8,16,32,64
 6. 12x fewer parameters than the Transformer v2, and scales where it doesn't
+7. Pure Neural CalcParent (38K params) eliminates all analytical ops at inference
 
 ### Open Directions
 1. **N=128, 256**: Continue curriculum chain. May need slightly longer training.
