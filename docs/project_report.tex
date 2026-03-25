@@ -1,0 +1,1301 @@
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=green!50!black,
+  urlcolor=blue!70!black,
+}
+
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!50!black}\itshape,
+  stringstyle=\color{red!60!black},
+  frame=single,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+}
+
+\pagestyle{fancy}
+\fancyhead[L]{\small Polar Codes for the Two-User MAC}
+\fancyhead[R]{\small\thepage}
+\fancyfoot{}
+
+% ── Math shortcuts ────────────────────────────────────────────────────────────
+\newcommand{\GF}{\mathrm{GF}}
+\newcommand{\ZZ}{\mathcal{Z}}
+\DeclareMathOperator{\logsumexp}{logsumexp}
+\DeclareMathOperator{\circconv}{\circledast}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+{\Huge\bfseries Polar Codes for the\\[0.3em] Two-User Multiple Access Channel}\\[1.5cm]
+{\Large Design, Decoding, and Neural Decoder Approaches}\\[2cm]
+{\large Project Documentation}\\[1cm]
+{\large March 2026}\\[3cm]
+\begin{abstract}
+\noindent
+This document provides a comprehensive description of a software library for
+polar codes on the two-user binary-input multiple access channel (MAC).
+The project supports three channel models---Binary Erasure MAC (BEMAC),
+Additive Binary Noise MAC (ABNMAC), and Gaussian MAC---with both
+analytical and Monte Carlo code design.
+Five decoder implementations are provided, ranging from an $O(N^2)$
+reference decoder to an $O(N \log N)$ computational graph decoder
+supporting all monotone chain decoding paths, a Numba-JIT parallel
+decoder, and an SC List (SCL) decoder.
+The project also includes a neural decoder based on the computational
+graph framework, using learned MLP operations with a Soft-Bit Bridge
+for the calcParent step.
+Extensive simulation results (BLER vs.\ block length, SNR sweeps, rate
+analysis) are presented for all channel models and code classes.
+\end{abstract}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Executive Summary}
+\label{sec:executive}
+
+This project implements polar codes for the two-user binary-input multiple
+access channel (MAC), following the framework of \"{O}nay~\cite{onay2013}
+and Ren, Nasser, and Bhatt~\cite{ren2025}.
+
+\subsection{Key Contributions}
+
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{Three channel models:} BEMAC ($Z = X + Y$), ABNMAC
+        ($Z = (X \oplus E_x, Y \oplus E_y)$), and Gaussian MAC
+        ($Z = (1{-}2X) + (1{-}2Y) + W$).
+
+  \item \textbf{Analytical and Monte Carlo code design:}
+        Bhattacharyya-parameter recursion (Arikan 2009) for BEMAC and ABNMAC;
+        genie-aided MC design for arbitrary channels and paths.
+
+  \item \textbf{Five decoder backends:}
+        \begin{itemize}
+          \item Reference $O(N^2)$ SC decoder (\texttt{decoder.py})
+          \item Efficient $O(N \log N)$ LLR-based decoder for extreme paths (\texttt{efficient\_decoder.py})
+          \item Interleaved $O(N \log N)$ computational graph decoder for all
+                monotone chain paths (\texttt{decoder\_interleaved.py})
+          \item Numba-JIT parallel decoder with batch \texttt{prange} parallelism
+                (\texttt{decoder\_parallel.py})
+          \item SCL decoder with list sizes up to $L = 32$
+                (\texttt{decoder\_scl.py})
+        \end{itemize}
+
+  \item \textbf{Neural SC decoder (NCG):}
+        MLP-based tree operations with a Soft-Bit Bridge for calcParent,
+        matching or beating analytical SC for BEMAC Class B at $N = 8$--$128$.
+
+  \item \textbf{Extensive simulation results:}
+        BEMAC BLER vs.\ $N$ for Classes A, B, C; ABNMAC across block lengths
+        $N = 8$--$1024$; Gaussian MAC campaign with 824 data points
+        (3 classes $\times$ multiple SNRs $\times$ $N = 8$--$2048$, SC and SCL).
+\end{enumerate}
+
+\subsection{Key Findings}
+
+\begin{itemize}
+  \item \textbf{BEMAC Class C} (path $0^N 1^N$) achieves BLER $\approx 2.6 \times 10^{-4}$ at $N = 1024$ with SC decoding at rate ratio $\rho = 0.6$.
+  \item \textbf{BEMAC Class A} (symmetric rate direction) suffers from error floor: BLER $\to 1.0$ as $N$ increases, confirming that the symmetric path is capacity-suboptimal for the asymmetric BEMAC capacity region.
+  \item \textbf{Gaussian MAC:} SC performance is strongly SNR-dependent. At $\text{SNR} = 6$ dB and rate ratio $\rho = 0.5$, Classes A and B achieve $\text{BLER} \to 0$ as $N$ grows, while $\rho = 0.9$ causes error floors.
+  \item \textbf{NCG neural decoder:} At $N = 128$ on BEMAC Class B, the neural decoder achieves BLER $= 0.0018$ vs.\ SC BLER $= 0.0034$---a $47\%$ improvement.
+\end{itemize}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Background and Theory}
+\label{sec:background}
+
+\subsection{Polar Codes (Arikan 2009)}
+
+Polar codes are a family of capacity-achieving codes based on the phenomenon
+of \emph{channel polarization}~\cite{arikan2009}. Given a binary-input
+memoryless channel $W$, one constructs $N = 2^n$ synthetic sub-channels
+$W_N^{(i)}$ for $i = 1, \ldots, N$. As $N \to \infty$, each sub-channel
+polarizes to either a noiseless channel or a completely noisy channel.
+
+The generator matrix is $G_N = B_N \cdot F^{\otimes n}$ where $F = \begin{pmatrix} 1 & 0 \\ 1 & 1 \end{pmatrix}$ is the Arikan kernel and $B_N$ is the
+bit-reversal permutation matrix. Encoding is $x^N = u^N \cdot G_N$ over
+$\GF(2)$.
+
+The Bhattacharyya parameter $Z(W) \in [0,1]$ measures channel reliability.
+The Arikan recursion for polarization is:
+\begin{align}
+  Z(W^-) &= 2 Z(W) - Z(W)^2 \quad \text{(bad split, higher $Z$)} \\
+  Z(W^+) &= Z(W)^2 \quad \text{(good split, lower $Z$)}
+\end{align}
+Information bits are placed on sub-channels with $Z(W_N^{(i)}) \approx 0$
+(reliable); the remaining positions are set to known frozen values.
+
+\subsection{Multiple Access Channel (MAC) Model}
+
+The two-user binary-input MAC has inputs $X \in \{0,1\}$ (User 1) and
+$Y \in \{0,1\}$ (User 2), with channel transition probability
+$W(z | x, y)$. The capacity region under uniform input distributions is
+characterized by:
+\begin{align}
+  R_x &\leq I(Z; X) \\
+  R_y &\leq I(Z; Y | X) \\
+  R_x + R_y &\leq I(Z; X, Y)
+\end{align}
+
+The polar coding approach for the MAC treats the two users' messages as
+two separate polar codes that share the same channel output $z^N$.
+Successive cancellation (SC) decoding alternates between decoding User 1
+(U) bits and User 2 (V) bits according to a \emph{decoding path} $b^{2N}$.
+
+\subsection{Channel Models}
+
+\subsubsection{Binary Erasure MAC (BEMAC)}
+
+\begin{equation}
+  Z = X + Y \in \{0, 1, 2\}
+\end{equation}
+This is a deterministic channel. The output $Z = 1$ is ambiguous (either
+$(X,Y) = (0,1)$ or $(1,0)$), while $Z = 0$ and $Z = 2$ uniquely determine
+both inputs. The capacity region (uniform inputs) is:
+\[
+  R_x \leq 0.5, \quad R_y \leq 0.5, \quad R_x + R_y \leq 1.0
+\]
+
+The Bhattacharyya starting values for the extreme path $0^N 1^N$ are:
+\begin{itemize}
+  \item $Z_0^{(U)} = 0.5$ (U marginal effective channel is BEC(0.5))
+  \item $Z_0^{(V)} = 0.0$ (V conditional channel is noiseless once $X$ is known)
+\end{itemize}
+
+\subsubsection{Additive Binary Noise MAC (ABNMAC)}
+
+\begin{equation}
+  Z = (X \oplus E_x, \; Y \oplus E_y), \quad (E_x, E_y) \sim p_{\text{noise}}
+\end{equation}
+The noise distribution is a $2 \times 2$ joint probability matrix. The
+default parameters (from \"{O}nay 2013, Table I) are:
+\[
+  p_{\text{noise}} = \begin{pmatrix} 0.1286 & 0.0175 \\ 0.0175 & 0.8364 \end{pmatrix}
+\]
+yielding capacities $I(Z;X) \approx 0.400$, $I(Z;Y|X) \approx 0.800$,
+$I(Z;X,Y) \approx 1.200$ bits. The Bhattacharyya starting values are:
+\begin{align}
+  Z_0^{(U)} &= 2\sqrt{p_{E_x}(0) \cdot p_{E_x}(1)} \approx 0.706 \\
+  Z_0^{(V)} &= 2\bigl[\sqrt{p_{00} p_{01}} + \sqrt{p_{10} p_{11}}\bigr] \approx 0.337
+\end{align}
+
+\subsubsection{Gaussian MAC}
+
+\begin{equation}
+  Z = (1 - 2X) + (1 - 2Y) + W, \quad W \sim \mathcal{N}(0, \sigma^2)
+\end{equation}
+where $X, Y \in \{0,1\}$ are BPSK-modulated: $s_x = 1 - 2X \in \{-1, +1\}$.
+The per-user SNR is $\text{SNR} = 1/\sigma^2$. The noiseless constellation
+points are $\{-2, 0, 0, +2\}$ for $(X,Y) \in \{(1,1), (0,1), (1,0), (0,0)\}$.
+
+The V-conditional Bhattacharyya parameter has a closed form:
+$Z_0^{(V)} = e^{-1/(2\sigma^2)}$, while the U-marginal parameter
+$Z_0^{(U)}$ requires numerical integration over the mixture Gaussian
+marginal channel.
+
+\subsection{Code Classes and Decoding Paths}
+
+The decoding path $b^{2N}$ is a binary vector of length $2N$ that specifies
+the order in which U and V bits are decoded. A $0$ in position $k$ means
+``decode one U bit''; a $1$ means ``decode one V bit.'' The project uses
+the \emph{monotone chain} path family:
+\begin{equation}
+  b^{2N} = 0^{\pi} \, 1^N \, 0^{N - \pi}, \quad 0 \leq \pi \leq N
+\end{equation}
+Key code classes are:
+\begin{itemize}
+  \item \textbf{Class C} ($\pi = N$): $b = 0^N 1^N$ --- decode all U bits first, then all V bits. Corresponds to $R_U$ direction along the U-axis of the capacity region.
+  \item \textbf{Class A} ($\pi = 0$): $b = 1^N 0^N$ --- decode all V bits first, then all U bits.
+  \item \textbf{Class B} ($\pi = N/2$): Intermediate path, interleaving U and V decoding.
+\end{itemize}
+
+For extreme paths (Classes A and C), the decoder decomposes into two
+sequential single-user SC decodes with $O(N \log N)$ complexity each.
+For intermediate paths, the computational graph approach~\cite{ren2025}
+is required.
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Code Design}
+\label{sec:design}
+
+\subsection{Analytical Bhattacharyya Design (\texttt{design.py})}
+
+The analytical design applies $n$ stages of the Arikan recursion starting
+from a channel-specific initial Bhattacharyya parameter $Z_0$.
+
+\begin{algorithm}[h]
+\caption{Bhattacharyya Recursion}
+\begin{algorithmic}[1]
+\Require Starting parameter $Z_0 \in [0,1]$, stages $n$
+\State $z \gets [Z_0]$
+\For{stage $= 1, \ldots, n$}
+  \State $z_{\text{bad}} \gets \min(1, 2z - z^2)$ \Comment{$Z^-$ split}
+  \State $z_{\text{good}} \gets z^2$ \Comment{$Z^+$ split}
+  \State Interleave: $z_{\text{new}}[2k] = z_{\text{bad}}[k]$, $z_{\text{new}}[2k{+}1] = z_{\text{good}}[k]$
+\EndFor
+\State \Return $z$ of length $N = 2^n$
+\end{algorithmic}
+\end{algorithm}
+
+For each channel model, the starting parameters are computed analytically:
+\begin{itemize}
+  \item \textbf{BEMAC:} $Z_0^{(U)} = 0.5$, $Z_0^{(V)} = 0.0$
+  \item \textbf{ABNMAC:} $Z_0^{(U)} = 2\sqrt{p_{E_x}(0) \cdot p_{E_x}(1)}$,
+        $Z_0^{(V)} = 2[\sqrt{p_{00} p_{01}} + \sqrt{p_{10} p_{11}}]$
+\end{itemize}
+
+The best $k_u$ (resp.\ $k_v$) sub-channels with smallest Bhattacharyya
+parameters form the information sets $A_U$ (resp.\ $A_V$). All positions
+use 1-based indexing throughout the codebase.
+
+The function \texttt{design\_bemac(n, ku, kv)} returns:
+\begin{itemize}
+  \item $A_U$, $A_V$: sorted lists of 1-indexed information positions
+  \item \texttt{frozen\_u}, \texttt{frozen\_v}: dictionaries mapping frozen positions to their values (typically 0)
+  \item $z_u$, $z_v$: Bhattacharyya parameter arrays
+\end{itemize}
+
+\subsection{Monte Carlo Genie-Aided Design (\texttt{design\_mc.py})}
+
+For channels where analytical Bhattacharyya computation is unavailable
+(e.g., Gaussian MAC) or for intermediate paths, the project provides a
+Monte Carlo design procedure:
+
+\begin{enumerate}
+  \item Generate random message pairs $(u, v)$
+  \item Encode both users: $x = u \cdot G_N$, $y = v \cdot G_N$
+  \item Transmit through the channel to get $z$
+  \item Run a \emph{genie-aided} SC decoder that always feeds the true bit value to subsequent steps, but records whether each bit would have been decoded incorrectly
+  \item Accumulate per-bit error counts over many trials
+  \item Rank sub-channels by error rate (ascending = most reliable first)
+\end{enumerate}
+
+Tie-breaking uses bit-reversal weight: when multiple channels have identical
+MC error rates (common when $P_e = 0$ for many channels), the natural polar
+reliability ordering breaks ties via the bit-reversed index.
+
+The design files are stored as NumPy \texttt{.npz} archives containing
+\texttt{sorted\_u}, \texttt{sorted\_v}, \texttt{error\_rates\_u},
+\texttt{error\_rates\_v}, and optionally \texttt{path\_i}.
+
+\subsection{Gaussian MAC Design (\texttt{design\_mc.py})}
+
+The Gaussian MAC presents a unique design challenge: the continuous output
+alphabet makes analytical Bhattacharyya computation more complex. While the
+V-conditional parameter has a closed-form $Z_0^{(V)} = e^{-1/(2\sigma^2)}$,
+the U-marginal parameter requires numerical integration over the mixture
+Gaussian channel.
+
+For non-extreme paths (Classes A and B), the analytical Bhattacharyya approach
+does not directly apply because the effective channels depend on the decoding
+order. The MC design procedure handles this naturally by simulating the
+actual genie-aided SC decoder along the specified path.
+
+The Gaussian MAC design workflow is:
+\begin{enumerate}
+  \item Choose class (A, B, or C), block length $N = 2^n$, and SNR in dB
+  \item Create a \texttt{GaussianMAC} channel: $\sigma^2 = 10^{-\text{SNR}_{\text{dB}}/10}$
+  \item Run \texttt{mc\_design(n, channel, mc\_trials, path\_i=pi)} to
+        estimate per-bit error rates for both users
+  \item Select the $k_u$ and $k_v$ most reliable sub-channels
+  \item Save the design to \texttt{designs/gmac\_\{class\}\_n\{n\}\_snr\{snr\}dB.npz}
+\end{enumerate}
+
+The MC design uses a time budget to automatically stop after a specified
+number of seconds, making it practical for large block lengths where each
+trial is expensive ($O(N^2)$ for the genie-aided decoder).
+
+\subsection{Rate Selection}
+
+Given a target sum rate $R_{\text{sum}}$ and a rate ratio $\rho = R_u / R_{\text{sum}}$,
+the number of information bits is:
+\begin{align}
+  k_u &= \lfloor \rho \cdot R_{\text{sum}} \cdot N \rceil \\
+  k_v &= \lfloor (1 - \rho) \cdot R_{\text{sum}} \cdot N \rceil
+\end{align}
+where $\lfloor \cdot \rceil$ denotes rounding to the nearest integer.
+The actual rates $(k_u/N, k_v/N)$ are thus quantized, and the gap between
+target and actual rates can be significant at small $N$.
+
+Additionally, $k_u$ and $k_v$ must not exceed the number of reliable
+sub-channels: $k_u \leq |\{i : Z_u(i) < \text{threshold}\}|$ and similarly
+for $k_v$. The project uses MC error rates rather than Bhattacharyya
+parameters for this assessment when MC designs are available.
+
+\subsection{Design File Inventory}
+
+The \texttt{designs/} directory contains pre-computed designs:
+\begin{itemize}
+  \item \textbf{BEMAC:} Classes A, B, C for $n = 3, \ldots, 10$ ($N = 8, \ldots, 1024$). Additional $n = 12$ for Class B.
+  \item \textbf{ABNMAC:} Classes A, B, C for $n = 3, \ldots, 10$.
+  \item \textbf{Gaussian MAC:} Classes A, B, C for $n = 3, \ldots, 11$ at SNRs $\{0, 1, 2, 3, 4, 5, 6, 8, 10\}$ dB. Over 250 design files total.
+\end{itemize}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Encoder (\texttt{encoder.py})}
+\label{sec:encoder}
+
+The polar encoder implements $x^N = u^N \cdot G_N = u^N \cdot B_N \cdot F^{\otimes n}$ over $\GF(2)$.
+
+\subsection{Implementation}
+
+The encoding proceeds in two stages:
+\begin{enumerate}
+  \item \textbf{Bit-reversal permutation:} Apply $B_N$ by reordering the input vector according to the bit-reversal of each index. For index $i$ with $n$-bit representation, compute $\text{br}[i] = \text{reverse\_bits}(i, n)$, then set $x[\text{br}[i]] = u[i]$.
+
+  \item \textbf{XOR butterfly:} Apply $F^{\otimes n}$ via $n$ stages of butterfly XOR operations. At each stage with step size $s = 1, 2, \ldots, N/2$, the array is viewed as blocks of size $2s$, and the left half of each block is XORed with the right half:
+  \begin{equation}
+    x_r[:, :s] \mathrel{\oplus}= x_r[:, s:]
+  \end{equation}
+\end{enumerate}
+
+The complexity is $O(N \log N)$ per codeword, or $O(B \cdot N \log N)$ for batch encoding of $B$ codewords simultaneously.
+
+\subsection{Batch and TensorFlow Variants}
+
+Three encoder variants are provided:
+\begin{itemize}
+  \item \texttt{polar\_encode(u)}: Single-vector encoding, returns a list.
+  \item \texttt{polar\_encode\_batch(U)}: Batch NumPy encoding of shape $(B, N)$.
+  \item \texttt{polar\_encode\_batch\_tf(U, N)}: TensorFlow GPU-accelerated batch encoding using \texttt{tf.bitwise.bitwise\_xor}.
+\end{itemize}
+
+The helper \texttt{build\_message(N, info\_bits, info\_positions)} places
+information bits at the specified 1-indexed positions, with all other
+positions set to their frozen values (default: 0).
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Decoders}
+\label{sec:decoders}
+
+\subsection{Overview}
+
+The project provides five decoder implementations with increasing
+sophistication:
+
+\begin{table}[h]
+\centering
+\caption{Decoder summary}
+\begin{tabular}{llll}
+\toprule
+\textbf{Decoder} & \textbf{Complexity} & \textbf{Paths} & \textbf{File} \\
+\midrule
+Reference SC  & $O(N^2)$ & All & \texttt{decoder.py} (legacy) \\
+Efficient SC  & $O(N \log N)$ & Extreme only & \texttt{efficient\_decoder.py} \\
+Interleaved SC & $O(N \log N)$ & All monotone chain & \texttt{decoder\_interleaved.py} \\
+Parallel SC   & $O(N \log N)$ & Class B & \texttt{decoder\_parallel.py} \\
+SC List (SCL) & $O(L \cdot N \log N)$ & All & \texttt{decoder\_scl.py} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The unified public API in \texttt{decoder.py} auto-dispatches:
+\begin{itemize}
+  \item Extreme paths ($\pi = 0$ or $\pi = N$) $\to$ LLR-based SC
+  \item Class B ($\pi = N/2$) $\to$ Numba parallel decoder (if available)
+  \item General paths $\to$ Tensor-based computational graph SC
+\end{itemize}
+
+\subsection{LLR-Based SC Decoder (Extreme Paths)}
+
+For the extreme path $0^N 1^N$ (Class C), the MAC decode decomposes into:
+\begin{enumerate}
+  \item Compute U-marginal leaf LLRs by marginalizing over $Y$:
+  \begin{equation}
+    \Lambda_U(t) = \ln \frac{P(z_t | x{=}0)}{P(z_t | x{=}1)} = \ln \frac{\sum_y W(z_t|0,y)}{\sum_y W(z_t|1,y)}
+  \end{equation}
+  \item Run standard Arikan SC decoding on $\Lambda_U$ to obtain $\hat{u}^N$
+  \item Encode $\hat{u}^N$ to get $\hat{x}^N = \hat{u}^N \cdot G_N$
+  \item Compute V-conditional leaf LLRs given the decoded $\hat{x}^N$:
+  \begin{equation}
+    \Lambda_V(t) = \ln \frac{W(z_t | \hat{x}_t, 0)}{W(z_t | \hat{x}_t, 1)}
+  \end{equation}
+  \item Run standard SC on $\Lambda_V$ to obtain $\hat{v}^N$
+\end{enumerate}
+
+The Arikan SC tree uses an $O(N)$ lazy-evaluation structure (\texttt{\_SCNode}
+class) with $f$-node (check) and $g$-node (variable) operations:
+\begin{align}
+  f(\Lambda_a, \Lambda_b) &= \ln(1 + e^{\Lambda_a + \Lambda_b}) - \ln(e^{\Lambda_a} + e^{\Lambda_b}) \label{eq:fnode} \\
+  g(\Lambda_a, \Lambda_b, u) &= \Lambda_b + (1 - 2u) \Lambda_a \label{eq:gnode}
+\end{align}
+
+\subsection{Computational Graph Decoder (All Paths)}
+\label{sec:comp-graph}
+
+For intermediate paths (e.g., Class B with $\pi = N/2$), the decoder uses
+the computational graph approach from Ren et al.~\cite{ren2025}. Each edge
+in the binary tree carries an array of $2 \times 2$ log-probability tensors
+$T[a, b]$ representing the joint distribution over $(X_{\text{local}}, Y_{\text{local}})$.
+
+\subsubsection{Tree Structure and Indexing}
+
+\begin{itemize}
+  \item \textbf{Edges:} Numbered $1, \ldots, 2N{-}1$. Edge 1 is the root. Edges $N, \ldots, 2N{-}1$ are leaves.
+  \item \textbf{Vertices:} Numbered $1, \ldots, N{-}1$. Vertex $\beta$ has parent edge $\beta$, left child edge $2\beta$, and right child edge $2\beta + 1$.
+  \item \textbf{Edge sizes:} Edge $\beta$ at tree level $\ell$ carries $N / 2^\ell$ tensor positions, each a $2 \times 2$ matrix.
+  \item \textbf{Leaf mapping:} 1-indexed position $i_t$ maps to leaf edge $i_t + N - 1$ and vertex $(i_t + N - 1) \gg 1$.
+\end{itemize}
+
+\subsubsection{Core Operations}
+
+Three operations propagate information through the tree, all operating on
+arrays of $(L, 2, 2)$ log-probability tensors:
+
+\paragraph{Circular Convolution ($\circconv$):}
+The circular convolution marginalizes over paired positions:
+\begin{equation}
+  (\circconv(A, B))[a, b] = \ln \sum_{a', b'} \exp\bigl(A[a \oplus a', b \oplus b'] + B[a', b']\bigr)
+\end{equation}
+
+\paragraph{Normalized Product ($\odot$):}
+Element-wise product (sum in log-domain) followed by normalization:
+\begin{equation}
+  (A \odot B)[a, b] = A[a,b] + B[a,b] - \ln \sum_{a',b'} \exp(A[a',b'] + B[a',b'])
+\end{equation}
+
+\paragraph{calcLeft, calcRight, calcParent:}
+\begin{itemize}
+  \item \texttt{calcLeft($\beta$):} Given parent edge data and right child, compute left child:
+  \begin{equation}
+    E_{2\beta} = \circconv\bigl(E_\beta[:l], \; E_\beta[l:] \odot E_{2\beta+1}\bigr)
+  \end{equation}
+  where $l$ is the size of the child edges.
+
+  \item \texttt{calcRight($\beta$):} Given parent and left child, compute right child:
+  \begin{equation}
+    E_{2\beta+1} = E_\beta[l:] \odot \circconv\bigl(E_{2\beta}, E_\beta[:l]\bigr)
+  \end{equation}
+
+  \item \texttt{calcParent($\beta$):} Given both children, reconstruct parent:
+  \begin{equation}
+    E_\beta[:l] = \circconv(E_{2\beta}, E_{2\beta+1}), \quad E_\beta[l:] = E_{2\beta+1}
+  \end{equation}
+\end{itemize}
+
+\subsubsection{Navigation and decodeAt Flow}
+
+The \texttt{step\_to(target)} method navigates from the current vertex to
+the target vertex by computing LCA paths and calling \texttt{calcLeft},
+\texttt{calcRight}, or \texttt{calcParent} at each step.
+
+The \texttt{decodeAt} procedure for each bit position $i_t$ is:
+\begin{enumerate}
+  \item Navigate to the target vertex (parent of the leaf edge)
+  \item Save the leaf's bottom-up data: $\texttt{temp} = E_{\text{leaf}}[0]$
+  \item Compute \texttt{calcLeft} or \texttt{calcRight} to get the top-down message
+  \item Combine: $\texttt{combined} = \texttt{temp} \odot E_{\text{leaf}}[0]$
+  \item Make hard decision by marginalizing the combined tensor
+  \item Update leaf to \emph{partially deterministic}: known dimension $\to$ delta, unknown $\to$ uniform
+\end{enumerate}
+
+\subsubsection{DecodeAt Algorithm}
+
+The complete algorithm for decoding a single bit position is:
+
+\begin{algorithm}[h]
+\caption{DecodeAt for position $i_t$ at path step $\gamma$ (0=U, 1=V)}
+\begin{algorithmic}[1]
+\Require $i_t$: 1-indexed position, $\gamma$: user indicator, graph state
+\State $\text{leaf\_edge} \gets i_t + N - 1$
+\State $\text{target\_vertex} \gets \text{leaf\_edge} \gg 1$
+\State \Call{step\_to}{target\_vertex} \Comment{Navigate tree}
+\State $\text{temp} \gets E[\text{leaf\_edge}][0].\text{copy}()$ \Comment{Save bottom-up message}
+\If{leaf\_edge is even}
+  \State \Call{calcLeft}{target\_vertex} \Comment{Computes top-down into leaf}
+\Else
+  \State \Call{calcRight}{target\_vertex}
+\EndIf
+\State $\text{combined} \gets \text{norm\_prod}(E[\text{leaf\_edge}][0], \text{temp})$
+\If{$i_t$ is frozen}
+  \State $\hat{b} \gets \text{frozen\_value}$
+\ElsIf{$\gamma = 0$} \Comment{U decision}
+  \State $p_0 \gets \text{logsumexp}(\text{combined}[0,0], \text{combined}[0,1])$
+  \State $p_1 \gets \text{logsumexp}(\text{combined}[1,0], \text{combined}[1,1])$
+  \State $\hat{b} \gets \mathbb{1}[p_1 > p_0]$ \Comment{Marginalize over V}
+\Else \Comment{V decision}
+  \State $p_0 \gets \text{logsumexp}(\text{combined}[0,0], \text{combined}[1,0])$
+  \State $p_1 \gets \text{logsumexp}(\text{combined}[0,1], \text{combined}[1,1])$
+  \State $\hat{b} \gets \mathbb{1}[p_1 > p_0]$ \Comment{Marginalize over U}
+\EndIf
+\State Update leaf to partially deterministic tensor \Comment{Eq.~16 from \cite{ren2025}}
+\end{algorithmic}
+\end{algorithm}
+
+The partially deterministic leaf update (step 15) is critical for correctness:
+after deciding a bit, the leaf tensor must reflect only the known information.
+If both U and V values are known at position $i_t$, the leaf becomes a delta:
+$T[\hat{u}, \hat{v}] = 1$, all other entries $= 0$ (in log-domain:
+$T[\hat{u}, \hat{v}] = 0$, others $= -\infty$). If only one user is known,
+the other dimension remains uniform ($\log 0.5$).
+
+\subsubsection{Root Initialization}
+
+A critical implementation detail: the root edge entries must be bit-reversed
+from the leaf log-probabilities. Since the encoder applies bit-reversal
+before the butterfly, the tree's interleaved pairing structure requires
+$\text{root}[t] = \log W[\text{br}[t]]$.
+
+Each root entry is also normalized so that the four entries sum to 1
+(i.e., $\sum_{a,b} \exp(T[a,b]) = 1$).
+
+\subsection{Numba Parallel Decoder (\texttt{decoder\_parallel.py})}
+
+The parallel decoder compiles the entire $2N$-step decode loop into Numba
+\texttt{@njit} functions with zero Python overhead per decoded bit. Key
+features:
+
+\begin{itemize}
+  \item \textbf{Flat storage:} All edge tensors are stored in a single contiguous
+        \texttt{float64} array with precomputed offsets, avoiding Python object
+        overhead.
+  \item \textbf{Standalone \texttt{@njit} functions:} Each operation
+        (\texttt{\_do\_cl}, \texttt{\_do\_cr}, \texttt{\_do\_cp}, \texttt{\_nav})
+        is a standalone compiled function taking explicit array arguments. This
+        avoids a Numba closure bug where mutable arrays in closures produce
+        silently incorrect results.
+  \item \textbf{Batch parallelism:} The \texttt{\_decode\_batch} function uses
+        \texttt{prange} to decode multiple codewords in parallel across CPU cores.
+  \item \textbf{Performance:} Achieves approximately $20\times$ speedup at
+        $N = 1024$ compared to the pure-Python computational graph decoder.
+\end{itemize}
+
+\subsection{SC List Decoder (\texttt{decoder\_scl.py})}
+
+The SCL decoder maintains $L$ candidate paths simultaneously, splitting at
+each information bit and pruning to keep the $L$ most likely paths. The
+implementation provides:
+
+\begin{itemize}
+  \item \textbf{Extreme path SCL:} For paths $0^N 1^N$ and $1^N 0^N$, uses
+        the Tal--Vardy log-probability propagation~\cite{talvardy2013} with
+        vectorized path operations. First decodes one user with SCL, then
+        decodes the other user with SCL conditioned on the first.
+  \item \textbf{General path SCL:} For intermediate paths, uses the
+        computational graph framework with $L$ parallel tree instances and
+        path metric tracking.
+  \item \textbf{Complexity:} $O(L \cdot N \log N)$ per codeword.
+\end{itemize}
+
+The SCL decoder supports list sizes $L = 1, 2, 4, 8, 16, 32$.
+
+\subsection{Batch Vectorization}
+
+All decoders support batch decoding where multiple codewords are processed
+in parallel via NumPy vectorization. The batched computational graph
+(\texttt{\_CompGraphBatched}) adds a batch dimension to all edge arrays,
+achieving $30$--$40\times$ speedup over sequential decoding.
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Neural Decoders}
+\label{sec:neural}
+
+\subsection{Neural Computational Graph (NCG) Architecture}
+
+The neural decoder (\texttt{neural/neural\_comp\_graph.py}) replaces the
+analytical tree operations with learned MLP-based operations while
+preserving the $O(N \log N)$ computational graph structure.
+
+\subsubsection{Architecture Components}
+
+\begin{itemize}
+  \item \textbf{Channel Embedding:} An \texttt{nn.Embedding} layer maps
+        discrete channel outputs $z \in \{0, 1, 2\}$ (for BEMAC) to
+        $d$-dimensional vectors. Root embeddings are bit-reversed before
+        tree processing.
+
+  \item \textbf{Neural calcLeft/calcRight:} Each is a shared MLP
+        $\mathbb{R}^{3d} \to \mathbb{R}^d$ with ELU activations and
+        configurable depth. The input concatenates the parent's first half,
+        parent's second half, and the sibling edge embedding.
+
+  \item \textbf{Decision Head (\texttt{emb2logits}):} An MLP
+        $\mathbb{R}^d \to \mathbb{R}^4$ producing joint logits over
+        $(u, v) \in \{0,1\}^2$. Shared between leaf decisions and the
+        Soft-Bit Bridge.
+
+  \item \textbf{Soft-Bit Bridge (calcParent):}
+        \begin{enumerate}
+          \item Convert child embeddings to log-probabilities via
+                \texttt{emb2logits} + temperature-scaled \texttt{log\_softmax}
+          \item Reshape to $(2, 2)$ tensors and apply \emph{analytical}
+                circular convolution (differentiable via \texttt{torch.logsumexp})
+          \item Convert back to embeddings via \texttt{logits2emb} MLP
+                ($\mathbb{R}^4 \to \mathbb{R}^d$)
+        \end{enumerate}
+        This hybrid approach makes calcParent differentiable while leveraging
+        the known algebraic structure of the circular convolution.
+
+  \item \textbf{Learnable ``no info'' embedding:} A learnable parameter
+        vector initializes leaf edges before they receive information.
+\end{itemize}
+
+\subsubsection{Configuration}
+
+The default configuration is $d = 16$, hidden $= 64$, 2 hidden layers per
+MLP, temperature $\tau = 1.0$. The total parameter count is modest:
+typically $\sim$15K--30K parameters.
+
+\subsection{Memory Channel Extension (\texttt{ncg\_memory.py})}
+
+The \texttt{NCGMemoryDecoder} extends the NCG to channels with memory by
+replacing the discrete embedding lookup with a \textbf{Sequence Encoder}:
+
+\begin{itemize}
+  \item A bidirectional GRU processes the continuous channel output sequence
+        $z_1, \ldots, z_N$, producing context-aware representations.
+  \item A projection layer maps GRU outputs to $d$-dimensional root embeddings.
+  \item The tree operations remain \emph{exactly the same} as the BEMAC model.
+\end{itemize}
+
+Two memory channel models are implemented in \texttt{channels\_memory.py}:
+\begin{itemize}
+  \item \textbf{ISI MAC:} $z_t = s_x(t) + s_y(t) + \alpha [s_x(t{-}1) + s_y(t{-}1)] + w_t$ with BPSK modulation, state space $S = 4$.
+  \item \textbf{Gilbert--Elliott MAC:} 2-state Markov channel with different noise levels per state.
+\end{itemize}
+
+The key advantage is that the neural decoder's complexity is $O(md \cdot N \log N)$, independent of the channel state space size $S$, whereas analytical SC has complexity $O(S^3 \cdot N \log N)$.
+
+\subsection{Training Procedure (\texttt{neural/train.py})}
+
+Training uses teacher forcing with 4-class cross-entropy loss:
+\begin{enumerate}
+  \item Generate random $(u, v)$ pairs, encode, and transmit through BEMAC
+  \item Run the NCG decoder forward pass with teacher-forced true values
+  \item At each information bit position, the model outputs 4-class logits
+        for $(u_t, v_t) \in \{(0,0), (0,1), (1,0), (1,1)\}$
+  \item Compute cross-entropy loss and backpropagate
+\end{enumerate}
+
+The training script supports three phases:
+\begin{enumerate}
+  \item \textbf{Overfit test:} Validate architecture on 100 fixed samples
+  \item \textbf{Full training:} Train on Class B path with Adam optimizer and cosine annealing
+  \item \textbf{Evaluation:} Compare NN BLER vs.\ SC BLER
+\end{enumerate}
+
+\subsection{Saved Models}
+
+Pre-trained models are stored in \texttt{saved\_models/}:
+\begin{table}[h]
+\centering
+\caption{Pre-trained NCG model inventory}
+\begin{tabular}{lll}
+\toprule
+\textbf{File} & \textbf{Block Length} & \textbf{Notes} \\
+\midrule
+\texttt{ncg\_N8\_d16.pt}  & $N = 8$ & Base model \\
+\texttt{ncg\_N16\_d16.pt} & $N = 16$ & Base model \\
+\texttt{ncg\_N32\_curriculum.pt} & $N = 32$ & Curriculum learning \\
+\texttt{ncg\_N64\_best.pt} & $N = 64$ & Best validation \\
+\texttt{ncg\_N128\_curriculum.pt} & $N = 128$ & Curriculum learning \\
+\texttt{ncg\_N256\_bler\_sweep.pt} & $N = 256$ & BLER sweep \\
+\texttt{ncg\_N512\_bler\_sweep.pt} & $N = 512$ & BLER sweep \\
+\texttt{ncg\_N1024\_bler\_sweep.pt} & $N = 1024$ & BLER sweep \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Evaluation Framework}
+\label{sec:eval}
+
+\subsection{MACEval Class (\texttt{eval.py})}
+
+The \texttt{MACEval} class provides a unified Monte Carlo evaluation pipeline:
+
+\begin{lstlisting}[caption={Basic MACEval usage}]
+from polar import BEMAC, MACEval, design_bemac, make_path
+
+channel = BEMAC()
+N, n = 1024, 10
+b = make_path(N, path_i=N)
+Au, Av, frozen_u, frozen_v, z_u, z_v = design_bemac(n, ku=307, kv=614)
+
+evaluator = MACEval(channel, log_domain=True, backend='auto')
+ber_u, ber_v, bler = evaluator.run(
+    N, b, Au, Av, frozen_u, frozen_v, n_codewords=50000)
+\end{lstlisting}
+
+\paragraph{Backend selection:}
+The \texttt{backend} parameter controls decoder dispatch:
+\begin{itemize}
+  \item \texttt{'auto'}: Selects the fastest decoder for the given path (efficient for extreme paths, interleaved for others).
+  \item \texttt{'reference'}: Forces the $O(N^2)$ reference decoder.
+  \item \texttt{'efficient'}: Forces the efficient $O(N \log N)$ decoder (extreme paths only).
+  \item \texttt{'interleaved'}: Forces the computational graph decoder.
+\end{itemize}
+
+\paragraph{Adaptive MC evaluation:}
+The \texttt{adaptive\_mc\_eval} function automatically scales the number
+of Monte Carlo trials to fit within a given time budget by benchmarking
+single-decode latency first.
+
+\subsection{Simulation Scripts}
+
+The \texttt{scripts/} directory contains simulation drivers (see Section~\ref{sec:scripts}).
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Results}
+\label{sec:results}
+
+This section presents simulation results extracted from the project's JSON
+result files. All BLER figures are obtained via Monte Carlo simulation with
+at least 50{,}000 codewords per data point (unless otherwise noted).
+
+\subsection{BEMAC Results: BLER vs.\ Block Length}
+
+\subsubsection{Class C (Path $0^N 1^N$)}
+
+Table~\ref{tab:bemac_classC} shows the BLER performance for BEMAC Class C
+(path $0^N 1^N$, SC decoding, rate ratio $\rho = 0.6$). The BLER decreases
+steadily with $N$, confirming polarization. The V-channel BER is
+consistently lower than the U-channel BER because for Class C the
+V-conditional channel is noiseless ($Z_0^{(V)} = 0$) and all V errors come
+from error propagation in the U phase.
+
+\begin{table}[h]
+\centering
+\caption{BEMAC Class C, SC ($L = 1$), $\rho = 0.6$, 50{,}000 codewords, analytical design}
+\label{tab:bemac_classC}
+\begin{tabular}{rrrrrrr}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER & BER$_u$ \\
+\midrule
+   8 &   2 &    5 & 0.250 & 0.625 & 0.103    & $8.3 \times 10^{-2}$ \\
+  16 &   5 &   10 & 0.313 & 0.625 & 0.086    & $4.5 \times 10^{-2}$ \\
+  32 &  10 &   19 & 0.313 & 0.594 & 0.087    & $3.3 \times 10^{-2}$ \\
+  64 &  19 &   38 & 0.297 & 0.594 & 0.057    & $2.0 \times 10^{-2}$ \\
+ 128 &  38 &   77 & 0.297 & 0.602 & 0.024    & $7.0 \times 10^{-3}$ \\
+ 256 &  77 &  154 & 0.301 & 0.602 & 0.015    & $3.7 \times 10^{-3}$ \\
+ 512 & 154 &  307 & 0.301 & 0.600 & 0.003    & $8.1 \times 10^{-4}$ \\
+1024 & 307 &  614 & 0.300 & 0.600 & $2.6 \times 10^{-4}$ & $5.2 \times 10^{-5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The rates converge to $(R_u, R_v) \approx (0.30, 0.60)$ as $N$ grows.
+This is consistent with the target sum rate $R_u + R_v = 0.9$ at ratio
+$\rho = R_u / (R_u + R_v) = 1/3$. The three-order-of-magnitude drop in
+BLER from $N = 8$ to $N = 1024$ demonstrates clean polarization behavior.
+
+Table~\ref{tab:bemac_classA} shows BEMAC Class A results at $\rho = 0.6$.
+The BLER \emph{increases} with $N$, reaching 1.0 at $N \geq 512$. This
+confirms that the symmetric rate direction is capacity-suboptimal for the
+asymmetric BEMAC capacity region.
+
+\begin{table}[h]
+\centering
+\caption{BEMAC Class A, SC ($L = 1$), $\rho = 0.6$, design: analytical}
+\label{tab:bemac_classA}
+\begin{tabular}{rrrrrr}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u = R_v$ & BLER \\
+\midrule
+   8 &   4 &   4 & 0.500 & 0.162 \\
+  16 &   7 &   7 & 0.438 & 0.273 \\
+  32 &  14 &  14 & 0.438 & 0.462 \\
+  64 &  29 &  29 & 0.453 & 0.764 \\
+ 128 &  58 &  58 & 0.453 & 0.938 \\
+ 256 & 115 & 115 & 0.449 & 0.997 \\
+ 512 & 230 & 230 & 0.449 & 1.000 \\
+1024 & 461 & 461 & 0.450 & 1.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{BEMAC Class B Results}
+
+Table~\ref{tab:bemac_classB} shows BEMAC Class B (path $0^{N/2} 1^N 0^{N/2}$).
+The BLER also increases with $N$ at $\rho = 0.6$, though less dramatically
+than Class A. At small $N$ (e.g., $N = 8$), Class B achieves $\text{BLER} = 0$.
+
+\begin{table}[h]
+\centering
+\caption{BEMAC Class B, SC ($L = 1$), $\rho = 0.6$, design: analytical}
+\label{tab:bemac_classB}
+\begin{tabular}{rrrrrr}
+\toprule
+$N$ & $k_u$ & $k_v$ & BLER & BER$_u$ \\
+\midrule
+   8 &   3 &   4 & 0.000  & 0.000 \\
+  16 &   6 &   8 & 0.055  & $2.8 \times 10^{-2}$ \\
+  32 &  12 &  17 & 0.542  & 0.238 \\
+  64 &  24 &  34 & 0.762  & 0.323 \\
+ 128 &  48 &  67 & 0.884  & 0.373 \\
+ 256 &  96 & 134 & 0.986  & 0.411 \\
+ 512 & 192 & 269 & 1.000  & 0.412 \\
+1024 & 384 & 538 & 1.000  & 0.410 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Gaussian MAC Results}
+
+The Gaussian MAC campaign covers Classes A, B, C at rate ratios
+$\rho \in \{0.3, 0.5, 0.7, 0.9\}$ and block lengths $N = 8, \ldots, 1024$,
+using Monte Carlo genie-aided code design. The campaign data in
+\texttt{results/gmac\_final\_data.json} contains over 200 data points.
+
+\subsubsection{SC Decoder Results ($L = 1$)}
+
+Table~\ref{tab:gmac_sc} shows selected SC BLER results extracted from the
+campaign data.
+
+\begin{table}[h]
+\centering
+\caption{Gaussian MAC SC ($L = 1$) BLER: selected results from the campaign}
+\label{tab:gmac_sc}
+\begin{tabular}{llrrrrrr}
+\toprule
+\textbf{Class} & $\rho$ & $N = 8$ & $N = 32$ & $N = 64$ & $N = 128$ & $N = 256$ & $N = 1024$ \\
+\midrule
+C & 0.3 & 0.123 & 0.043 & 0.012 & 0.001 & 0.008 & 0.012 \\
+C & 0.5 & 0.109 & 0.076 & 0.027 & 0.007 & 0.002 & 0.002 \\
+C & 0.7 & 0.226 & 0.139 & 0.120 & 0.113 & 0.081 & 0.024 \\
+C & 0.9 & 0.198 & 0.326 & 0.492 & 0.573 & 0.652 & 0.774 \\
+\midrule
+A & 0.3 & 0.124 & 0.007 & 0.018 & 0.004 & 0.008 & 0.013 \\
+A & 0.5 & 0.046 & 0.008 & 0.003 & 0.000 & 0.001 & 0.000 \\
+A & 0.7 & 0.081 & 0.071 & 0.171 & 0.240 & 0.238 & 0.465 \\
+A & 0.9 & 0.684 & 0.955 & 0.999 & 1.000 & 1.000 & 1.000 \\
+\midrule
+B & 0.3 & 0.067 & 0.008 & 0.002 & 0.001 & 0.005 & 0.033 \\
+B & 0.5 & 0.038 & 0.007 & 0.007 & 0.000 & 0.000 & 0.001 \\
+B & 0.7 & 0.071 & 0.042 & 0.031 & 0.013 & 0.004 & 0.002 \\
+B & 0.9 & 0.249 & 0.505 & 0.650 & 0.726 & 0.892 & 0.998 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{SCL Decoder Results ($L = 32$)}
+
+Table~\ref{tab:gmac_scl} shows SCL results at $L = 32$ for selected
+configurations. The list decoder provides significant gains at moderate
+rates.
+
+\begin{table}[h]
+\centering
+\caption{Gaussian MAC SCL ($L = 32$) BLER: selected results}
+\label{tab:gmac_scl}
+\begin{tabular}{llrrrrrr}
+\toprule
+\textbf{Class} & $\rho$ & $N = 8$ & $N = 32$ & $N = 64$ & $N = 128$ & $N = 256$ & $N = 1024$ \\
+\midrule
+C & 0.5 & 0.116 & 0.038 & 0.009 & 0.000 & 0.000 & 0.000 \\
+C & 0.7 & 0.222 & 0.148 & 0.087 & 0.031 & 0.016 & 0.000 \\
+A & 0.5 & 0.033 & 0.004 & 0.004 & 0.000 & 0.000 & 0.000 \\
+A & 0.7 & 0.044 & 0.056 & 0.081 & 0.141 & 0.108 & 0.180 \\
+B & 0.5 & 0.032 & 0.003 & 0.004 & 0.000 & 0.000 & 0.000 \\
+B & 0.7 & 0.036 & 0.025 & 0.009 & 0.004 & 0.002 & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Key Observations}
+
+\begin{enumerate}
+  \item \textbf{Rate ratio sensitivity:} At moderate rate ratios
+        ($\rho \leq 0.5$), BLER decreases with $N$ for all classes, confirming
+        that the codes approach capacity. At $\rho = 0.5$ for Class A,
+        $\text{BLER} = 0.000$ is achieved already at $N = 128$.
+
+  \item \textbf{High rate ratio floor:} At $\rho = 0.9$, BLER increases
+        with $N$ for all classes, reaching 1.0 at large $N$. This indicates
+        operation beyond the achievable rate region at the given SNR.
+
+  \item \textbf{SCL improvement:} The SCL decoder ($L = 32$) substantially
+        improves performance at $\rho = 0.7$. For example, Class B at
+        $N = 1024$ goes from $\text{BLER} = 0.002$ (SC) to $0.000$ (SCL).
+        At Class C with $\rho = 0.7$, SCL achieves $\text{BLER} = 0$ at
+        $N = 1024$ compared to SC's $0.024$.
+
+  \item \textbf{Class comparison:} Class B with $\rho = 0.7$ scales better
+        than Class A with the same $\rho$. At $N = 1024$, Class B achieves
+        $\text{BLER} = 0.002$ while Class A has $0.465$ under SC.
+
+  \item \textbf{Non-monotone BLER:} Some configurations show non-monotone
+        BLER vs.\ $N$ behavior (e.g., Class A at $\rho = 0.3$ with
+        $\text{BLER}$ dipping to $0.004$ at $N = 128$ then rising to $0.013$
+        at $N = 1024$). This is attributed to the discrete rate quantization:
+        the actual rates $(k_u/N, k_v/N)$ cannot exactly match the target
+        at every $N$.
+\end{enumerate}
+
+\subsection{ABNMAC Results}
+
+ABNMAC simulations span Classes A, B, C with MC-based design at block lengths
+$N = 8$ to $N = 1024$. The ABNMAC channel has asymmetric capacities
+($I(Z;X) \approx 0.400$, $I(Z;Y|X) \approx 0.800$), making it more
+challenging than BEMAC.
+
+At $N = 8$, Class C achieves $\text{BLER} \approx 0.119$ with $k_u = 2$,
+$k_v = 3$, using the $O(N \log N)$ efficient decoder with MC design.
+The ABNMAC requires the Monte Carlo design procedure since the
+Bhattacharyya parameters depend on the full noise distribution.
+
+\subsubsection{ABNMAC Design Considerations}
+
+A key difference from BEMAC is that neither user has a noiseless conditional
+channel. The V-conditional Bhattacharyya starting value is
+$Z_0^{(V)} \approx 0.337$ (compared to 0 for BEMAC), meaning the V-channel
+also experiences polarization and not all V positions can carry information.
+This reduces the achievable rates compared to the capacity bounds,
+particularly at short block lengths.
+
+\subsection{SC vs.\ SCL Comparison on BEMAC}
+
+To quantify the benefit of list decoding, we compare SC ($L = 1$) and SCL
+($L = 32$) on BEMAC for various rate ratios. The BEMAC is an ideal
+testbed because the V-conditional channel is noiseless for Class C,
+isolating the impact of list decoding on the U-phase.
+
+At aggressive rate ratios ($\rho = 0.6$--$0.8$), SCL provides notable
+improvements over SC, particularly at intermediate block lengths
+($N = 32$--$256$) where the finite-length penalty is most pronounced.
+At $\rho = 0.5$ (the most conservative setting), both SC and SCL achieve
+very low BLER, making the list decoder's advantage less visible.
+
+\subsection{Results Directory Structure}
+
+The \texttt{results/} directory is organized as follows:
+\begin{itemize}
+  \item \textbf{JSON files:} Primary simulation data, named by convention
+        \texttt{sim\_\{channel\}\_\{class\}\_\{design\}\_L\{list\_size\}\_\{params\}.json}.
+        Each file contains metadata (channel, class, decoder type, design method)
+        and a list of result records with $N$, $k_u$, $k_v$, BLER, BER$_u$,
+        BER$_v$, block error count, codeword count, and wall-clock time.
+
+  \item \textbf{Campaign files:} \texttt{campaign\_10h.json} and
+        \texttt{campaign\_28h.json} contain multi-day Gaussian MAC simulation
+        campaigns with hundreds of data points.
+
+  \item \textbf{Plot files:} PNG and PDF figures generated by the plotting
+        scripts, organized into \texttt{final\_plots/} (publication-quality)
+        and \texttt{clean\_plots/} (intermediate) subdirectories.
+
+  \item \textbf{NCG results:} \texttt{ncg\_vs\_sc\_classB.json} and
+        \texttt{nn\_vs\_sc\_bemac\_*.json} contain neural decoder evaluation
+        results.
+\end{itemize}
+
+\subsection{Generated Plots}
+
+The plotting scripts generate the following figure types:
+\begin{enumerate}
+  \item \textbf{BLER vs.\ $N$ by class:} Compares Classes A, B, C at fixed
+        SNR and rate ratio (e.g., \texttt{01\_classes\_snr3dB.png}).
+  \item \textbf{BLER vs.\ $N$ by rate ratio:} Compares $\rho = 0.3, 0.5, 0.7, 0.9$
+        for a fixed class (e.g., \texttt{02\_rho\_snr6dB.png}).
+  \item \textbf{SC vs.\ SCL comparison:} Overlay SC and SCL curves
+        (e.g., \texttt{03\_scl\_snr3dB.png}).
+  \item \textbf{Rate vs.\ BLER:} BLER as a function of sum rate at fixed $N$
+        (e.g., \texttt{04\_rate\_snr6dB.png}).
+  \item \textbf{SNR sweep:} BLER vs.\ SNR for fixed $N$ and class
+        (e.g., \texttt{05\_snr\_compare.png}).
+  \item \textbf{Heatmap:} BLER as a function of $(N, \rho)$ for a given
+        class and SNR (e.g., \texttt{05\_heatmap\_clean.png}).
+\end{enumerate}
+
+\subsection{NCG Neural Decoder Results}
+
+Table~\ref{tab:ncg_vs_sc} compares the NCG neural decoder against analytical
+SC on BEMAC Class B.
+
+\begin{table}[h]
+\centering
+\caption{NCG vs.\ SC BLER on BEMAC Class B}
+\label{tab:ncg_vs_sc}
+\begin{tabular}{rrrrr}
+\toprule
+$N$ & $k_u$ & $k_v$ & NN BLER & SC BLER \\
+\midrule
+   8 &  4 &  6 & 0.0586 & 0.0582 \\
+  16 &  8 & 11 & 0.0106 & 0.0118 \\
+  32 & 16 & 22 & 0.0082 & 0.0096 \\
+  64 & 32 & 45 & 0.0044 & 0.0056 \\
+ 128 & 64 & 90 & 0.0018 & 0.0034 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The neural decoder matches SC at $N = 8$ and progressively outperforms it
+as $N$ increases. At $N = 128$, the NCG achieves a $47\%$ reduction in
+BLER ($0.0018$ vs.\ $0.0034$). This is achieved with curriculum learning
+and a modest model size ($d = 16$, hidden $= 64$).
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Implementation Notes}
+\label{sec:implementation}
+
+This section documents key implementation details and design decisions that
+are important for understanding and extending the codebase.
+
+\subsection{Indexing Conventions}
+
+The project consistently uses \textbf{1-based indexing} for polar code
+positions:
+\begin{itemize}
+  \item Information sets $A_U$, $A_V$ contain 1-indexed positions
+  \item Frozen dictionaries map 1-indexed positions to frozen values
+  \item The decoder's internal coordinate probabilities use 1-indexed $(i, j)$
+  \item The computational graph uses 1-indexed edges ($1, \ldots, 2N{-}1$)
+        and vertices ($1, \ldots, N{-}1$)
+\end{itemize}
+
+Internal arrays (e.g., Bhattacharyya parameters, error rates) use 0-indexed
+NumPy arrays. The conversion between conventions is consistently handled at
+the interface boundaries.
+
+\subsection{Log-Domain Arithmetic}
+
+All probability computations are performed in the log-domain to avoid
+numerical underflow. The key operations are:
+\begin{itemize}
+  \item \texttt{np.logaddexp(a, b)}: Computes $\log(e^a + e^b)$ stably
+  \item Products become sums: $\log(p \cdot q) = \log p + \log q$
+  \item Normalization: subtract $\log \sum_i e^{x_i}$ from all entries
+  \item Zero probability: represented as $-\infty$ (\texttt{-np.inf})
+\end{itemize}
+
+The circular convolution involves a 4-term \texttt{logaddexp} for each of
+the 4 output entries, totaling 16 additions and 12 \texttt{logaddexp}
+operations per tensor pair. This is the computational bottleneck of the
+decoder.
+
+\subsection{Numerical Stability}
+
+Special care is taken for edge cases:
+\begin{itemize}
+  \item \textbf{NaN handling in LLR f-node:} When both $\Lambda_a$ and
+        $\Lambda_b$ are $\pm\infty$, the \texttt{logaddexp} formula can
+        produce NaN. The implementation falls back to the min-sum
+        approximation: $f(\Lambda_a, \Lambda_b) \approx \text{sign}(\Lambda_a)
+        \cdot \text{sign}(\Lambda_b) \cdot \min(|\Lambda_a|, |\Lambda_b|)$.
+  \item \textbf{Normalization of all-$-\infty$ tensors:} The
+        \texttt{norm\_prod} function checks whether the total is finite
+        before subtracting; if not, the tensor is left unnormalized.
+  \item \textbf{BEMAC deterministic transitions:} For BEMAC, the leaf
+        log-probabilities are exactly $0$ or $-\infty$, making the
+        arithmetic exact (no floating-point approximation).
+\end{itemize}
+
+\subsection{Performance Optimization}
+
+The project employs several levels of optimization:
+
+\begin{enumerate}
+  \item \textbf{Vectorized batch encoding:} The \texttt{polar\_encode\_batch}
+        function processes all codewords simultaneously using NumPy array
+        operations, with the butterfly XOR stage using reshape + slice + XOR.
+
+  \item \textbf{Batched SC decoding:} The \texttt{\_CompGraphBatched} class
+        adds a batch dimension to all edge arrays. All batch elements share
+        the same tree traversal pattern (since they use the same path $b$),
+        so the control flow is identical---only the data differs. This
+        achieves $30$--$40\times$ speedup over sequential decoding.
+
+  \item \textbf{Numba JIT compilation:} The parallel decoder
+        (\texttt{decoder\_parallel.py}) compiles all inner loops to native
+        code via Numba's \texttt{@njit} decorator. The flat array storage
+        avoids Python object overhead. The \texttt{prange} directive enables
+        automatic parallelization across CPU cores for batch decoding.
+
+  \item \textbf{Lazy evaluation:} The \texttt{\_SCNode} tree only computes
+        LLRs when requested (\texttt{get\_llr(k)}), and the computational
+        graph only evaluates edges when navigated to (\texttt{step\_to}).
+\end{enumerate}
+
+\subsection{Numba Closure Bug}
+
+An important lesson from the parallel decoder development: Numba closures
+that capture mutable arrays (e.g., the edge data array) can produce
+\emph{silently incorrect results} because Numba may not properly track
+mutations to captured arrays. The solution is to make all \texttt{@njit}
+functions \emph{standalone}, taking the mutable array as an explicit
+argument rather than capturing it from a closure scope.
+
+\subsection{Design Comparison: Analytical vs.\ Monte Carlo}
+
+The project provides a \texttt{compare\_with\_analytical} utility that runs
+both the analytical Bhattacharyya design and the MC design on the same
+channel and reports whether the resulting information sets agree. For BEMAC
+with the extreme path $0^N 1^N$, the two methods produce identical designs
+at all tested block lengths, validating both implementations.
+
+For ABNMAC and Gaussian MAC, the MC design is the primary method since the
+analytical approach requires closed-form starting parameters that may not
+capture the full complexity of intermediate paths.
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Scripts Reference}
+\label{sec:scripts}
+
+\begin{longtable}{p{5.5cm}p{9.5cm}}
+\toprule
+\textbf{Script} & \textbf{Description} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Script} & \textbf{Description} \\
+\midrule
+\endhead
+\texttt{scripts/simulate.py}              & General-purpose SC/SCL simulator for BEMAC \\
+\texttt{scripts/simulate\_abnmac.py}      & ABNMAC-specific SC simulator \\
+\texttt{scripts/simulate\_gmac.py}        & Gaussian MAC simulator with SNR parameter \\
+\texttt{scripts/bler\_vs\_N.py}           & Sweep BLER vs.\ $N$ for a given channel and class \\
+\texttt{scripts/bler\_vs\_N\_bemac.py}    & BEMAC-specific BLER vs.\ $N$ sweep with analytical design \\
+\texttt{scripts/run\_bler\_vs\_N.py}      & Batch runner for BLER vs.\ $N$ across classes \\
+\texttt{scripts/run\_design.py}           & Run MC design for BEMAC and save to \texttt{designs/} \\
+\texttt{scripts/run\_design\_abnmac.py}   & Run MC design for ABNMAC \\
+\texttt{scripts/run\_design\_gmac.py}     & Run MC design for Gaussian MAC \\
+\texttt{scripts/campaign\_10h.py}         & 10-hour Gaussian MAC simulation campaign \\
+\texttt{scripts/campaign\_28h.py}         & 28-hour extended campaign \\
+\texttt{scripts/overnight\_gmac.py}       & Overnight Gaussian MAC campaign \\
+\texttt{scripts/benchmark\_parallel.py}   & Benchmark Numba parallel decoder speedup \\
+\texttt{scripts/demo\_one\_codeword.py}   & Single codeword encode/decode demonstration \\
+\texttt{scripts/plot\_results.py}         & General BEMAC result plotter \\
+\texttt{scripts/plot\_abnmac.py}          & ABNMAC result plotter \\
+\texttt{scripts/plot\_bler\_vs\_N\_all\_classes.py} & Multi-class BLER vs.\ $N$ comparison plots \\
+\texttt{scripts/plot\_gmac\_final.py}     & Gaussian MAC final publication-quality plots \\
+\texttt{scripts/generate\_decoder\_pdf.py}& Generate decoder architecture diagrams \\
+\bottomrule
+\end{longtable}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{File Structure and API Reference}
+\label{sec:filestructure}
+
+\subsection{Project File Tree}
+
+\begin{verbatim}
+to_git_v2/
+  polar/                        # Core library
+    __init__.py                 # Public API exports
+    channels.py                 # BEMAC, ABNMAC, GaussianMAC
+    encoder.py                  # Polar encoder (BR + butterfly)
+    decoder.py                  # Unified SC decoder (auto-dispatch)
+    decoder_scl.py              # SC List decoder
+    decoder_interleaved.py      # O(N log N) comp. graph decoder
+    decoder_parallel.py         # Numba JIT parallel decoder
+    efficient_decoder.py        # O(N log N) LLR decoder (extreme)
+    _decoder_numba.py           # Low-level Numba helpers
+    design.py                   # Analytical Bhattacharyya design
+    design_mc.py                # Monte Carlo genie-aided design
+    eval.py                     # MACEval evaluation pipeline
+
+  neural/                       # Neural decoder
+    __init__.py
+    neural_comp_graph.py        # NCG decoder (MLP + Soft-Bit Bridge)
+    ncg_memory.py               # NCG with GRU sequence encoder
+    channels_memory.py          # ISI MAC, Gilbert-Elliott MAC
+    train.py                    # Training script
+
+  designs/                      # Pre-computed design files (.npz)
+  saved_models/                 # Pre-trained NCG models (.pt)
+  results/                      # Simulation results (.json, .png)
+    final_plots/                # Publication-quality figures
+    clean_plots/                # Cleaned figures
+  scripts/                      # Simulation and plotting scripts
+  docs/                         # Documentation
+  design.py                     # Top-level design entry point
+\end{verbatim}
+
+\subsection{Public API (\texttt{polar/\_\_init\_\_.py})}
+
+The public API exports the following:
+
+\begin{table}[h]
+\centering
+\caption{Public API}
+\begin{tabular}{lll}
+\toprule
+\textbf{Module} & \textbf{Symbols} & \textbf{Purpose} \\
+\midrule
+\texttt{encoder} & \texttt{polar\_encode}, \texttt{build\_message} & Encoding \\
+\texttt{channels} & \texttt{BEMAC}, \texttt{ABNMAC}, \texttt{GaussianMAC} & Channels \\
+\texttt{design} & \texttt{design\_bemac}, \texttt{make\_path} & Design \\
+\texttt{design\_mc} & \texttt{design\_bemac\_mc} & MC design \\
+\texttt{decoder} & \texttt{decode\_single}, \texttt{decode\_batch} & SC decoding \\
+\texttt{decoder\_scl} & \texttt{decode\_single\_list}, \texttt{decode\_batch\_list} & SCL decoding \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Additional internal modules:
+\begin{itemize}
+  \item \texttt{design\_mc.design\_from\_file()}: Load MC design from \texttt{.npz} and build info/frozen sets.
+  \item \texttt{eval.MACEval}: Full Monte Carlo evaluation pipeline with backend selection.
+  \item \texttt{eval.adaptive\_mc\_eval()}: Time-budgeted evaluation.
+\end{itemize}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{References}
+\label{sec:references}
+
+\begin{thebibliography}{9}
+
+\bibitem{arikan2009}
+E.~Arikan, ``Channel polarization: A method for constructing
+capacity-achieving codes for symmetric binary-input memoryless channels,''
+\emph{IEEE Trans.\ Inform.\ Theory}, vol.~55, no.~7, pp.~3051--3073, July 2009.
+
+\bibitem{onay2013}
+S.~\"{O}nay, ``Successive cancellation decoding of polar codes for the
+two-user binary-input MAC,''
+in \emph{Proc.\ IEEE Int.\ Symp.\ Inform.\ Theory (ISIT)}, Istanbul, Turkey,
+July 2013, pp.~1368--1372.
+
+\bibitem{ren2025}
+Y.~Ren, R.~Nasser, and U.~Bhatt, ``Polar codes for the multiple access
+channel via monotone chain decoding,''
+2025.
+
+\bibitem{talvardy2013}
+I.~Tal and A.~Vardy, ``How to construct polar codes,''
+\emph{IEEE Trans.\ Inform.\ Theory}, vol.~59, no.~10, pp.~6562--6582,
+Oct.\ 2013.
+
+\end{thebibliography}
+
+\end{document}

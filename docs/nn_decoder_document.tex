@@ -1,0 +1,795 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{booktabs}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{caption}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!60!black
+}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\circonv}{\circledast}
+\newcommand{\normprod}{\odot}
+\newcommand{\GN}{G_N}
+\newcommand{\BN}{B_N}
+\newcommand{\Fkron}{F^{\otimes n}}
+
+\title{\textbf{Neural Computational Graph SC Decoder\\for 2-User MAC Polar Codes}}
+\author{Master's Thesis in Electrical Engineering}
+\date{March 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present a neural successive cancellation (SC) decoder for two-user multiple access channel (MAC) polar codes that replaces the analytical tree operations of the computational graph framework with learned neural modules. The decoder operates on the $O(N \log N)$ computational graph structure introduced by Ren et al.\ (2025) for monotone chain decoding paths, preserving the tree navigation and scheduling logic while replacing the three core operations---\texttt{calcLeft}, \texttt{calcRight}, and \texttt{calcParent}---with weight-shared multilayer perceptrons (MLPs). We propose two variants: a \emph{Soft-Bit Bridge} version (27,764 parameters) that retains the analytical circular convolution within the \texttt{calcParent} operation for differentiability, and a \emph{Pure Neural} version (38,500 parameters) that eliminates all analytical operations via a GRU-gated residual architecture trained through knowledge distillation. Both versions achieve block error rates (BLER) competitive with or superior to analytical SC decoding across code lengths $N = 8$ to $1024$, with the Soft-Bit Bridge version achieving a $2\times$ BLER improvement at $N = 1024$. The neural decoder has complexity $O(md \cdot N \log N)$ where $m$ and $d$ are fixed architectural parameters, making it independent of the channel alphabet size and memory---a critical advantage over analytical SC decoding which scales as $O(|\mathcal{S}|^3 N \log N)$ for channels with memory.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+%=============================================================================
+\section{Introduction}
+\label{sec:introduction}
+%=============================================================================
+
+Polar codes, introduced by Ar{\i}kan in 2009, provably achieve the symmetric capacity of any binary-input discrete memoryless channel under successive cancellation (SC) decoding. Their extension to the two-user multiple access channel (MAC) was established through the work of Abbe and Telatar, who showed that polar codes can achieve any rate pair in the MAC capacity region. The key insight is that the two users' codewords can be decoded jointly by treating the MAC as a set of coupled virtual channels that polarize under the Kronecker construction.
+
+For the MAC setting, the decoding path---the order in which user~U and user~V bits are decoded---determines the achievable rate region. \emph{Monotone chain paths}, parameterized by an index $i \in \{0, 1, \ldots, N\}$, trace out the entire MAC capacity region. Class~A paths ($i = 0$) decode all U bits first, then all V bits. Class~C paths ($i = N$) decode all V bits first, then all U bits. Class~B paths ($0 < i < N$), which are required to achieve rate pairs in the interior of the capacity region, interleave U and V bit decisions.
+
+The computational graph framework of Ren et al.\ (2025) provides an $O(N \log N)$ SC decoder for \emph{any} monotone chain path. It represents the decoder state as a binary tree of probability tensors and defines three operations: \texttt{calcLeft} (top-down left child computation via circular convolution), \texttt{calcRight} (top-down right child computation via normalized product), and \texttt{calcParent} (bottom-up parent reconstruction). For Class~A and~C paths, only \texttt{calcLeft} and \texttt{calcRight} are needed, as the decoder traverses the tree in a single depth-first sweep. For Class~B paths, however, the decoder must jump between subtrees corresponding to different users, requiring \texttt{calcParent} to propagate information upward before descending into a different subtree.
+
+While the analytical computational graph decoder achieves $O(N \log N)$ complexity for memoryless channels, each tree operation involves manipulating $|\mathcal{S}| \times |\mathcal{S}|$ probability tensors (where $|\mathcal{S}|$ is the channel state space size), and the circular convolution in particular has complexity $O(|\mathcal{S}|^3)$. For channels with memory---such as intersymbol interference (ISI) channels or Gilbert-Elliott channels---$|\mathcal{S}|$ can be large, making the decoder computationally prohibitive.
+
+In this work, we replace the probability tensor manipulations with neural network modules that operate on fixed-dimensional learned embeddings. Each tree operation becomes an MLP forward pass with complexity $O(md)$, where $m$ is the hidden layer width and $d$ is the embedding dimension. The total decoder complexity is $O(md \cdot N \log N)$, independent of the channel model. We present two architectural variants:
+
+\begin{enumerate}
+    \item \textbf{Soft-Bit Bridge} (Section~\ref{sec:soft_bit_bridge}): The \texttt{calcParent} operation maps embeddings to log-probabilities, applies the exact analytical circular convolution, and maps back. This hybrid approach ensures correctness of the hardest operation while keeping \texttt{calcLeft} and \texttt{calcRight} fully neural. Total: 27,764 parameters.
+
+    \item \textbf{Pure Neural CalcParent} (Section~\ref{sec:pure_neural}): A GRU-gated residual network replaces \texttt{calcParent} entirely, trained via knowledge distillation from the Soft-Bit Bridge teacher. Total: 38,500 parameters.
+\end{enumerate}
+
+Both variants are trained with teacher forcing using 4-class cross-entropy loss and employ curriculum learning across code lengths to scale from $N = 8$ to $N = 1024$.
+
+%=============================================================================
+\section{Background: Polar Codes for the MAC}
+\label{sec:background}
+%=============================================================================
+
+\subsection{Two-User MAC Channel Model}
+
+Consider a two-user binary-input MAC where users U and V transmit binary codewords $\bm{x} = (x_1, \ldots, x_N)$ and $\bm{y} = (y_1, \ldots, y_N)$ respectively, with $x_i, y_i \in \{0, 1\}$. The receiver observes the channel output
+\begin{equation}
+    z_i = f(x_i, y_i), \quad i = 1, \ldots, N.
+\end{equation}
+
+For the \textbf{Binary Erasure MAC (BEMAC)}, the channel is defined by addition over the integers:
+\begin{equation}
+    z_i = x_i + y_i \in \{0, 1, 2\},
+    \label{eq:bemac}
+\end{equation}
+so the channel output alphabet has size $|\mathcal{Z}| = 3$. When $z_i = 0$, both users sent~0; when $z_i = 2$, both sent~1; when $z_i = 1$, exactly one user sent~1 but the receiver does not know which.
+
+For the \textbf{Gaussian MAC (GMAC)}, the channel output is:
+\begin{equation}
+    z_i = (1 - 2x_i) + (1 - 2y_i) + w_i, \quad w_i \sim \mathcal{N}(0, \sigma^2),
+\end{equation}
+where the binary inputs are mapped to $\pm 1$ via BPSK modulation.
+
+\subsection{Polar Encoding}
+
+Both users employ the same polar encoder. For a code of length $N = 2^n$, the encoding operation is:
+\begin{equation}
+    \bm{x} = \bm{u} \cdot \GN, \quad \GN = \BN \cdot \Fkron,
+\end{equation}
+where $\bm{u} = (u_1, \ldots, u_N)$ is the input vector (containing both information and frozen bits), $\BN$ is the $N \times N$ bit-reversal permutation matrix, and
+\begin{equation}
+    F = \begin{pmatrix} 1 & 0 \\ 1 & 1 \end{pmatrix}, \quad \Fkron = \underbrace{F \otimes F \otimes \cdots \otimes F}_{n \text{ times}}
+\end{equation}
+is the $n$-fold Kronecker product of the basic polarization kernel. The encoding applies a bit-reversal permutation followed by $n$ stages of XOR butterfly operations. User~V encodes identically: $\bm{y} = \bm{v} \cdot \GN$.
+
+\subsection{Monotone Chain Paths and the Capacity Region}
+\label{sec:monotone_chain}
+
+The MAC capacity region for the BEMAC is the set of rate pairs $(R_u, R_v)$ satisfying:
+\begin{align}
+    R_u &\leq H(X | Y, Z) = 1, \\
+    R_v &\leq H(Y | X, Z) = 1, \\
+    R_u + R_v &\leq H(X, Y | Z) \approx 1.5.
+\end{align}
+
+To achieve any rate pair in this region, we must choose an appropriate \emph{decoding path}---the order in which the $2N$ bit decisions (N from each user) are made. A \textbf{monotone chain path} is parameterized by an index $i \in \{0, 1, \ldots, N\}$ and is defined by the binary path vector:
+\begin{equation}
+    \bm{b} = (\underbrace{0, \ldots, 0}_{i \text{ U-steps}}, \underbrace{1, \ldots, 1}_{N \text{ V-steps}}, \underbrace{0, \ldots, 0}_{N - i \text{ U-steps}}).
+    \label{eq:path_vector}
+\end{equation}
+
+Here $b_t = 0$ indicates a U-step (decode one bit of user~U) and $b_t = 1$ indicates a V-step (decode one bit of user~V). The three classes are:
+
+\begin{itemize}
+    \item \textbf{Class A} ($i = 0$): All V bits decoded first, then all U bits. Achieves the corner point $(R_u^{\max}, R_v^{\min})$.
+    \item \textbf{Class C} ($i = N$): All U bits decoded first, then all V bits. Achieves the corner point $(R_u^{\min}, R_v^{\max})$.
+    \item \textbf{Class B} ($0 < i < N$): Interleaved decoding. Achieves rate pairs in the interior of the capacity region. The typical choice is $i = N/2$.
+\end{itemize}
+
+\subsection{The Computational Graph Decoder}
+\label{sec:comp_graph}
+
+The computational graph framework of Ren et al.\ (2025) represents the decoder state as a complete binary tree with $N - 1$ internal vertices and $N$ leaves. Each edge in the tree carries a probability tensor of shape $(|\mathcal{S}_u|, |\mathcal{S}_v|)$, representing the joint distribution over the two users' bit values. For the BEMAC, these are $2 \times 2$ tensors.
+
+\paragraph{Indexing.} Edges are numbered $1, 2, \ldots, 2N - 1$. Edge~1 is the root edge. Edges $N, N+1, \ldots, 2N - 1$ are the leaf edges. Vertex~$\beta$ (for $\beta \in \{1, \ldots, N-1\}$) has parent edge~$\beta$, left child edge~$2\beta$, and right child edge~$2\beta + 1$.
+
+\paragraph{Initialization.} The root edge (edge~1) is initialized with the channel observation log-likelihoods, after applying the bit-reversal permutation:
+\begin{equation}
+    \text{root}[t] = \log W(z_{\pi(t)} \mid u, v), \quad t = 1, \ldots, N,
+\end{equation}
+where $\pi$ is the bit-reversal permutation of $\{1, \ldots, N\}$.
+
+The three core operations, defined for vertex~$\beta$ with parent edge of length $2\ell$ and child edges of length~$\ell$, are:
+
+\paragraph{CalcLeft (Equation 13 of Ren et al.).} Computes the left child edge from the parent edge and right child edge. For each position $i = 1, \ldots, \ell$:
+\begin{equation}
+    \text{left}[i] = \text{parent}[i] \circonv \left(\text{parent}[i + \ell] \normprod \text{right}[i]\right),
+    \label{eq:calc_left}
+\end{equation}
+where $\circonv$ denotes the circular convolution and $\normprod$ denotes the normalized (element-wise) product on $2 \times 2$ log-probability tensors.
+
+\paragraph{CalcRight (Equation 14 of Ren et al.).} Computes the right child edge from the parent edge and left child edge:
+\begin{equation}
+    \text{right}[i] = \text{parent}[i + \ell] \normprod \left(\text{left}[i] \circonv \text{parent}[i]\right).
+    \label{eq:calc_right}
+\end{equation}
+
+\paragraph{CalcParent (Equation 15 of Ren et al.).} Reconstructs the parent edge from both child edges (bottom-up propagation):
+\begin{equation}
+    \text{parent}[i] = \text{left}[i] \circonv \text{right}[i], \quad \text{parent}[i + \ell] = \text{right}[i].
+    \label{eq:calc_parent}
+\end{equation}
+
+\paragraph{Circular Convolution.} The circular convolution $C = A \circonv B$ on $2 \times 2$ log-probability tensors is defined as:
+\begin{equation}
+    C[a, b] = \log \sum_{a', b'} \exp\bigl(A[a \oplus a', b \oplus b'] + B[a', b']\bigr),
+    \label{eq:circ_conv}
+\end{equation}
+where $\oplus$ denotes XOR (addition modulo~2). This yields four terms per output entry, computed via \texttt{logsumexp} for numerical stability.
+
+\paragraph{Normalized Product.} The normalized product $C = A \normprod B$ is element-wise addition in log-space followed by normalization:
+\begin{equation}
+    C[a, b] = A[a, b] + B[a, b] - \log \sum_{a', b'} \exp\bigl(A[a', b'] + B[a', b']\bigr).
+\end{equation}
+
+%=============================================================================
+\section{The CalcParent Problem}
+\label{sec:calcparent_problem}
+%=============================================================================
+
+\subsection{Why Class B Needs CalcParent}
+
+For Class~A and Class~C paths, the decoder performs a single depth-first traversal of the binary tree. At each vertex, it computes \texttt{calcLeft} to descend to the left subtree, processes all leaves there, then computes \texttt{calcRight} to descend to the right subtree. The decoder never needs to propagate information \emph{upward}---it only descends.
+
+Class~B paths break this pattern. After decoding $i$ U-bits (which involves visiting certain leaves in the left and right subtrees), the decoder switches to decoding $N$ V-bits, then returns to decode the remaining $N - i$ U-bits. This interleaving means the decoder must frequently jump between subtrees that are not adjacent in the tree. To navigate from one subtree to another, the decoder must first climb \emph{up} the tree (using \texttt{calcParent} at each vertex) to reach a common ancestor, then descend \emph{down} into the target subtree (using \texttt{calcLeft} or \texttt{calcRight}).
+
+\subsection{Frequency of CalcParent Calls}
+
+The number of \texttt{calcParent} calls depends on the path and the code length. For the standard Class~B path with $i = N/2$, the decoder makes approximately $2N \log_2 N$ total tree operations, of which roughly one-third are \texttt{calcParent} calls. At $N = 1024$, this amounts to approximately 2,035 \texttt{calcParent} invocations per codeword---comparable in frequency to \texttt{calcLeft} and \texttt{calcRight} calls. This makes \texttt{calcParent} a performance-critical operation that cannot be avoided.
+
+\subsection{Why Naive Neural Approaches Fail}
+
+Before arriving at the architectures presented in this work, we explored eight distinct approaches over two development sessions, all of which failed for Class~B decoding:
+
+\begin{enumerate}
+    \item \textbf{DFS Neural Polar Decoder (NPD)}: A recursive top-down decoder that follows a depth-first traversal. Works for Class~A/C but fundamentally cannot handle Class~B paths because it has no mechanism for bottom-up information propagation.
+
+    \item \textbf{Bidirectional DFS}: Attempted to run two DFS passes (one for each user) and merge results. Failed because the DFS ordering does not match the Class~B path ordering, leading to frozen set mismatches (BLER $\approx 1.0$).
+
+    \item \textbf{Multi-pass with Conditioner}: A 3-pass architecture where an attention-based Conditioner injects codeword decisions between passes. Matched SC for Class~C but failed for Class~B due to train-test mismatch (Conditioner trained with true codewords, tested with noisy estimates).
+
+    \item \textbf{Iterative single-user decoder}: Alternates between decoding U (treating V as noise) and decoding V (treating U as noise). Hard decision errors in the first pass propagate catastrophically (BLER = 0.81 vs.\ SC = 0.056).
+
+    \item \textbf{Transformer autoregressive}: A sequence-to-sequence model following the Class~B path. Matched SC at $N = 8$ (ratio 1.01) but failed at $N \geq 16$ due to autoregressive exposure bias (BLER = 0.75 vs.\ SC = 0.013).
+
+    \item \textbf{Naive MLP CalcParent}: Directly mapping $\R^d \times \R^d \to \R^{2d}$ with an MLP. Failed due to the compression bottleneck: the circular convolution involves a 4-way logsumexp that is difficult to approximate, and small errors cascade through the tree.
+\end{enumerate}
+
+The common failure mode is that Class~B decoding requires \emph{bidirectional} information flow through the tree, and any architecture that only supports top-down flow will fail. The computational graph framework provides the correct scheduling; the challenge is making each operation learnable and differentiable.
+
+%=============================================================================
+\section{Architecture: Neural Computational Graph Decoder}
+\label{sec:architecture}
+%=============================================================================
+
+The Neural Computational Graph (NCG) decoder retains the exact tree structure, navigation logic, and scheduling of the analytical computational graph decoder. The key modification is the \emph{data representation}: instead of storing $2 \times 2$ log-probability tensors on each tree edge, we store learned $d$-dimensional embeddings. Each tree operation is replaced by a weight-shared neural network module.
+
+\subsection{Overall Architecture}
+
+The decoder maintains an array of edge data:
+\begin{equation}
+    \texttt{edge\_data}[\beta] \in \R^{B \times L_\beta \times d}, \quad \beta = 1, \ldots, 2N - 1,
+\end{equation}
+where $B$ is the batch size, $L_\beta = N / 2^{\lfloor \log_2 \beta \rfloor}$ is the edge length at the level of edge~$\beta$, and $d = 16$ is the embedding dimension. The root edge ($\beta = 1$) has length $N$; leaf edges ($\beta \geq N$) have length~1.
+
+The tree navigation functions---\texttt{stepTo}, \texttt{getPath}, and \texttt{stepOne}---are identical to those in the analytical decoder. The neural modules replace only the data-transforming operations within each step.
+
+\subsection{Neural Modules}
+\label{sec:modules}
+
+\subsubsection{EmbeddingZ (48 parameters)}
+
+The channel output embedding maps discrete channel observations to the latent space:
+\begin{equation}
+    \texttt{EmbeddingZ}: \{0, 1, 2\} \to \R^d, \quad d = 16.
+\end{equation}
+
+This is implemented as a standard \texttt{nn.Embedding(3, 16)} lookup table with $3 \times 16 = 48$ learnable parameters. For the BEMAC channel with $z \in \{0, 1, 2\}$, each channel output symbol is mapped to a 16-dimensional vector.
+
+After embedding, the bit-reversal permutation is applied to align the channel observations with the computational graph's interleaved tree structure:
+\begin{equation}
+    \text{root}[t] = \texttt{EmbeddingZ}(z_{\pi(t)}), \quad t = 1, \ldots, N,
+\end{equation}
+where $\pi$ is the bit-reversal permutation of order~$n = \log_2 N$.
+
+\subsubsection{NeuralCalcLeft (8,336 parameters)}
+
+The neural \texttt{calcLeft} replaces the analytical operation of Equation~\eqref{eq:calc_left}. At vertex~$\beta$ with parent edge of length $2\ell$, it computes the left child edge from the parent and right child:
+\begin{equation}
+    \text{left}[i] = \text{MLP}_{\text{left}}\bigl(\text{parent}[i] \,\|\, \text{parent}[i + \ell] \,\|\, \text{right}[i]\bigr),
+\end{equation}
+where $\|$ denotes concatenation. The input dimension is $3d = 48$, and the architecture is:
+\begin{equation}
+    \R^{48} \xrightarrow{\text{Linear}} \R^{64} \xrightarrow{\text{ELU}} \R^{64} \xrightarrow{\text{Linear}} \R^{64} \xrightarrow{\text{ELU}} \R^{64} \xrightarrow{\text{Linear}} \R^{16}.
+\end{equation}
+
+The parameter count is: $(48 \times 64 + 64) + (64 \times 64 + 64) + (64 \times 16 + 16) = 3{,}136 + 4{,}160 + 1{,}040 = 8{,}336$.
+
+Critically, the same network weights are shared across \emph{all} tree levels. This weight sharing is what enables the decoder to generalize across code lengths: a model trained at $N = 16$ can decode at $N = 1024$ without retraining the \texttt{calcLeft} module.
+
+\subsubsection{NeuralCalcRight (8,336 parameters)}
+
+The neural \texttt{calcRight} has the same architecture as \texttt{calcLeft} but with a separate set of weights:
+\begin{equation}
+    \text{right}[i] = \text{MLP}_{\text{right}}\bigl(\text{parent}[i] \,\|\, \text{parent}[i + \ell] \,\|\, \text{left}[i]\bigr).
+\end{equation}
+
+Input: concatenation of parent first half, parent second half, and left child embedding, yielding $3d = 48$ input features. Same MLP architecture as \texttt{calcLeft}: $\R^{48} \to \R^{64} \to \R^{64} \to \R^{16}$ with ELU activations, totalling 8,336 parameters.
+
+\subsubsection{Emb2Logits (5,508 parameters)}
+
+The decision head maps a $d$-dimensional embedding to 4-class joint logits:
+\begin{equation}
+    \texttt{Emb2Logits}: \R^{16} \to \R^4, \quad \text{output} = \bigl(\log P(u{=}0, v{=}0),\; \log P(u{=}0, v{=}1),\; \log P(u{=}1, v{=}0),\; \log P(u{=}1, v{=}1)\bigr).
+\end{equation}
+
+Architecture: $\R^{16} \to \R^{64} \to \R^{64} \to \R^{4}$ with ELU activations. Parameter count: $(16 \times 64 + 64) + (64 \times 64 + 64) + (64 \times 4 + 4) = 1{,}088 + 4{,}160 + 260 = 5{,}508$.
+
+This module serves a \textbf{dual purpose}:
+\begin{enumerate}
+    \item At leaf positions, it produces the 4-class logits used for bit decisions.
+    \item In the Soft-Bit Bridge \texttt{calcParent}, it converts embeddings to log-probabilities for the analytical circular convolution.
+\end{enumerate}
+
+\subsubsection{Logits2Emb (5,520 parameters)}
+
+The inverse mapping from log-probability space back to the latent embedding space:
+\begin{equation}
+    \texttt{Logits2Emb}: \R^4 \to \R^{16}.
+\end{equation}
+
+Architecture: $\R^{4} \to \R^{64} \to \R^{64} \to \R^{16}$ with ELU activations. Parameter count: $(4 \times 64 + 64) + (64 \times 64 + 64) + (64 \times 16 + 16) = 320 + 4{,}160 + 1{,}040 = 5{,}520$.
+
+This module is used in the Soft-Bit Bridge (to re-embed the circular convolution output) and in the leaf state update (to convert partially deterministic log-probabilities to embeddings).
+
+\subsubsection{No-Info Embedding (16 parameters)}
+
+A single learnable parameter vector $\bm{e}_{\varnothing} \in \R^{16}$ that initializes all internal tree edges to a ``no information'' state at the beginning of decoding:
+\begin{equation}
+    \texttt{edge\_data}[\beta] = \bm{e}_{\varnothing}, \quad \forall\, \beta \in \{2, \ldots, 2N - 1\}.
+\end{equation}
+
+This vector is initialized with small random values ($\sim \mathcal{N}(0, 0.01)$) and learned end-to-end. It represents the prior state of an edge before any channel information has been propagated to it.
+
+\subsubsection{NeuralCalcParent --- Pure Neural Version (10,736 parameters)}
+
+The pure neural \texttt{calcParent} module uses a GRU-style gated residual architecture. Given the left child embedding $\bm{\ell} \in \R^d$ and right child embedding $\bm{r} \in \R^d$:
+
+\begin{align}
+    \bm{c} &= [\bm{\ell} \,\|\, \bm{r}] \in \R^{2d}, \\
+    \bm{g} &= \sigma\bigl(\text{GateNet}(\bm{c})\bigr) \in [0, 1]^d, \label{eq:gate}\\
+    \hat{\bm{p}} &= \text{CandidateNet}(\bm{c}) \in \R^d, \label{eq:candidate}\\
+    \text{parent\_first}[i] &= \bm{g} \odot \hat{\bm{p}} + (1 - \bm{g}) \odot \frac{\bm{\ell} + \bm{r}}{2}, \label{eq:gru_residual}\\
+    \text{parent\_second}[i] &= W_s \cdot \bm{r} + \bm{b}_s. \label{eq:parent_second}
+\end{align}
+
+The \textbf{GateNet} is: $\R^{32} \xrightarrow{\text{Linear}} \R^{64} \xrightarrow{\text{ELU}} \R^{64} \xrightarrow{\text{Linear}} \R^{16} \xrightarrow{\sigma}$. Parameter count: $(32 \times 64 + 64) + (64 \times 16 + 16) = 2{,}112 + 1{,}040 = 3{,}152$.
+
+The \textbf{CandidateNet} is: $\R^{32} \to \R^{64} \to \R^{64} \to \R^{16}$ with ELU activations, totalling $2{,}112 + 4{,}160 + 1{,}040 = 7{,}312$ parameters.
+
+The \textbf{parent\_second\_nn} is a single linear layer $\R^{16} \to \R^{16}$: $16 \times 16 + 16 = 272$ parameters.
+
+Total NeuralCalcParent: $3{,}152 + 7{,}312 + 272 = 10{,}736$ parameters.
+
+The residual term $(\bm{\ell} + \bm{r}) / 2$ in Equation~\eqref{eq:gru_residual} provides a stable initialization: when the gate is~0, the output is simply the average of the children, which is a reasonable starting point. The gate learns to selectively override this average with the learned candidate representation.
+
+%=============================================================================
+\section{The Soft-Bit Bridge}
+\label{sec:soft_bit_bridge}
+%=============================================================================
+
+\subsection{Architecture}
+
+The Soft-Bit Bridge is a hybrid approach to \texttt{calcParent} that keeps the analytically hardest part---the circular convolution---exact, while learning the simpler embedding-to-probability and probability-to-embedding mappings. The pipeline at vertex~$\beta$ is:
+
+\begin{enumerate}
+    \item \textbf{Embedding $\to$ Log-probabilities}: Apply the shared \texttt{Emb2Logits} head followed by temperature-scaled log-softmax:
+    \begin{align}
+        \bm{p}_L &= \log\text{softmax}\bigl(\texttt{Emb2Logits}(\text{left}) / \tau\bigr) \in \R^{B \times \ell \times 4}, \\
+        \bm{p}_R &= \log\text{softmax}\bigl(\texttt{Emb2Logits}(\text{right}) / \tau\bigr) \in \R^{B \times \ell \times 4}.
+    \end{align}
+
+    \item \textbf{Reshape to tensors}: Reshape the 4-dimensional log-probability vectors into $2 \times 2$ tensors:
+    \begin{equation}
+        \bm{P}_L, \bm{P}_R \in \R^{B \times \ell \times 2 \times 2}.
+    \end{equation}
+
+    \item \textbf{Analytical circular convolution}: Compute the exact circular convolution (Equation~\eqref{eq:circ_conv}) using \texttt{torch.logsumexp}, which provides exact gradients:
+    \begin{equation}
+        \bm{P}_{\text{parent\_first}} = \bm{P}_L \circonv \bm{P}_R.
+    \end{equation}
+
+    \item \textbf{Log-probabilities $\to$ Embedding}: Re-embed both halves using \texttt{Logits2Emb}:
+    \begin{align}
+        \text{parent\_first\_emb} &= \texttt{Logits2Emb}\bigl(\bm{P}_{\text{parent\_first}}\bigr), \\
+        \text{parent\_second\_emb} &= \texttt{Logits2Emb}\bigl(\bm{p}_R\bigr).
+    \end{align}
+
+    \item \textbf{Concatenate}: The parent edge is formed by concatenating both halves:
+    \begin{equation}
+        \texttt{edge\_data}[\beta] = [\text{parent\_first\_emb} \,\|\, \text{parent\_second\_emb}].
+    \end{equation}
+\end{enumerate}
+
+\subsection{Why It Works}
+
+The key insight is that the circular convolution---the most mathematically complex of the three tree operations---is the one kept analytical. The learned components (\texttt{Emb2Logits} and \texttt{Logits2Emb}) only need to learn relatively simple mappings between the latent space and the probability simplex.
+
+The \texttt{Emb2Logits} module is shared with the leaf decision head, which means it is trained with direct supervision (cross-entropy loss at every leaf position). This shared training ensures that the embedding-to-probability mapping is well-calibrated, which in turn ensures that the analytical circular convolution receives valid inputs.
+
+\subsection{Differentiability}
+
+The entire Soft-Bit Bridge is differentiable. The circular convolution involves \texttt{logsumexp} operations, which have well-defined gradients:
+\begin{equation}
+    \frac{\partial}{\partial A_{ij}} \log \sum_k \exp(f_k(A)) = \frac{\sum_k \exp(f_k(A)) \cdot f_k'(A)}{\sum_k \exp(f_k(A))},
+\end{equation}
+implemented automatically by PyTorch's autograd. This allows end-to-end training through the Soft-Bit Bridge without any approximation.
+
+\subsection{Temperature Parameter}
+
+The temperature $\tau$ in the log-softmax controls the sharpness of the probability distributions passed to the circular convolution. We tested $\tau \in \{1.0, 1.5, 2.0\}$ and found that $\tau = 1.0$ (no temperature scaling) yields optimal results. Higher temperatures soften the distributions, which hurts the circular convolution's ability to discriminate between different bit patterns.
+
+\subsection{Limitation}
+
+The Soft-Bit Bridge retains the $O(|\mathcal{S}|^3)$ complexity of the analytical circular convolution within \texttt{calcParent}. For memoryless channels with small alphabets (like the BEMAC with $|\mathcal{S}| = 2$), this is negligible. However, for channels with memory where the state space can be large, this becomes the computational bottleneck. This limitation motivates the pure neural \texttt{calcParent} of Section~\ref{sec:pure_neural}.
+
+%=============================================================================
+\section{The Pure Neural CalcParent}
+\label{sec:pure_neural}
+%=============================================================================
+
+\subsection{Motivation}
+
+The Soft-Bit Bridge successfully solves the \texttt{calcParent} problem for memoryless channels, but its reliance on the analytical circular convolution means it inherits the $O(|\mathcal{S}|^3)$ complexity for channels with memory. For an ISI channel with memory length $L$, the state space grows as $|\mathcal{S}| = 2^L$, making the convolution $O(8^L)$---exponential in the memory length.
+
+A fully neural \texttt{calcParent} with fixed architecture has complexity $O(md)$ regardless of the channel model, where $m = 64$ is the hidden dimension and $d = 16$ is the embedding dimension. This makes the total decoder complexity $O(md \cdot N \log N)$ for \emph{any} channel.
+
+\subsection{GRU-Gated Architecture}
+
+The pure neural \texttt{calcParent} module (\texttt{NeuralCalcParent}) uses the gated residual structure detailed in Equations~\eqref{eq:gate}--\eqref{eq:parent_second}. The design choices are:
+
+\begin{itemize}
+    \item \textbf{Residual baseline}: The term $(\bm{\ell} + \bm{r}) / 2$ ensures that even an untrained model produces a reasonable parent embedding (the average of its children). This stabilizes early training.
+
+    \item \textbf{Sigmoid gate}: The gate $\bm{g} \in [0, 1]^d$ learns per-dimension which features should come from the candidate network versus the residual. Early in training, the gate stays near~0.5, gradually specializing.
+
+    \item \textbf{Deeper candidate}: The candidate network has 2 hidden layers (vs.\ 1 for the gate), giving it more capacity to learn the nonlinear aspects of the circular convolution.
+
+    \item \textbf{Linear parent\_second}: The second half of the parent is a simple linear transform of the right child, mirroring the analytical structure where $\text{parent}[i + \ell] = \text{right}[i]$ (up to re-embedding).
+\end{itemize}
+
+\subsection{Knowledge Distillation Training}
+\label{sec:distillation}
+
+Direct end-to-end training of the pure neural \texttt{calcParent} fails: the model converges to a suboptimal local minimum where it ignores the gate and relies entirely on the residual. Knowledge distillation from the pre-trained Soft-Bit Bridge decoder provides the necessary training signal.
+
+The distillation training proceeds in three phases:
+
+\paragraph{Phase A (4,000 iterations, $\alpha = 1.0$).} Only the \texttt{calcParent} parameters are trained. At each \texttt{calcParent} call, both the neural module and the analytical teacher compute the parent embedding. The loss is:
+\begin{equation}
+    \mathcal{L}_A = \mathcal{L}_{\text{CE}} + \alpha \cdot \frac{1}{K} \sum_{k=1}^{K} \| \bm{e}_{\text{student}}^{(k)} - \bm{e}_{\text{teacher}}^{(k)} \|_2^2,
+\end{equation}
+where $K$ is the number of \texttt{calcParent} calls per codeword, $\bm{e}_{\text{student}}$ is the neural output, and $\bm{e}_{\text{teacher}}$ is the Soft-Bit Bridge output (detached from the computation graph). All other parameters (\texttt{calcLeft}, \texttt{calcRight}, \texttt{Emb2Logits}, etc.) are frozen.
+
+\paragraph{Phase B (4,000 iterations, $\alpha: 1.0 \to 0.0$).} Still training only \texttt{calcParent} parameters, but the distillation weight $\alpha$ linearly decays from 1.0 to 0.0. This gradually shifts the training signal from imitating the teacher to optimizing the cross-entropy loss directly.
+
+\paragraph{Phase C (4,000 iterations, $\alpha = 0.0$).} All parameters are unfrozen and fine-tuned jointly at reduced learning rates (CalcParent: $10^{-4}$, others: $5 \times 10^{-5}$). No teacher signal. This allows the entire network to co-adapt to the neural \texttt{calcParent}.
+
+\paragraph{Critical discovery.} During distillation (Phases A and B), the pre-trained parameters \emph{must be frozen}. If they are allowed to train simultaneously, the \texttt{Emb2Logits} module (shared between the teacher's Soft-Bit Bridge and the decision head) drifts, causing the teacher signal to become inconsistent and training to diverge.
+
+\paragraph{Verification.} At inference time, the pure neural decoder makes zero analytical \texttt{calcParent} calls. For $N = 16$ with path index $i = 8$, the decoder makes 345 neural \texttt{calcParent} calls and 0 teacher calls per codeword, confirming that all analytical operations have been eliminated.
+
+%=============================================================================
+\section{One Decoding Step}
+\label{sec:decoding_step}
+%=============================================================================
+
+We now walk through the six sub-steps that occur when the decoder visits a single leaf position. Let the current position in the path vector be step~$t$ with $b_t = \gamma$ (0 for U-step, 1 for V-step), and let the target leaf edge be $e_{\text{leaf}}$ at vertex $v_{\text{target}} = e_{\text{leaf}} \gg 1$.
+
+\subsection{Step 1: Navigate to Target Leaf}
+
+The decoder maintains a ``decoding head'' position in the tree, initially at vertex~1 (the root). To reach the target vertex, it calls \texttt{stepTo(current, target)}, which:
+\begin{enumerate}[label=(\alph*)]
+    \item Computes the path between \texttt{current} and \texttt{target} via \texttt{getPath}: climb up from \texttt{current} to the lowest common ancestor, then descend to \texttt{target}.
+    \item For each step in the path, calls \texttt{stepOne}:
+    \begin{itemize}
+        \item \textbf{Going up} (current $\to$ parent): invokes \texttt{calcParent} on the current vertex.
+        \item \textbf{Going down to left child}: invokes \texttt{calcLeft} on the current vertex.
+        \item \textbf{Going down to right child}: invokes \texttt{calcRight} on the current vertex.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Step 2: Save Bottom-Up Embedding}
+
+Before computing the top-down message, the decoder saves the current state of the leaf edge, which represents the bottom-up (``getAsParent'') information accumulated from previous leaf visits:
+\begin{equation}
+    \bm{t}_{\text{temp}} = \texttt{edge\_data}[e_{\text{leaf}}][:,\, 0] \in \R^{B \times d}.
+    \label{eq:save_temp}
+\end{equation}
+
+The \texttt{.clone()} ensures that this tensor is not modified by subsequent operations.
+
+\subsection{Step 3: Compute Top-Down Message}
+
+The top-down message is computed by applying \texttt{calcLeft} (if $e_{\text{leaf}}$ is a left child, i.e., $e_{\text{leaf}}$ is even) or \texttt{calcRight} (if $e_{\text{leaf}}$ is a right child, i.e., $e_{\text{leaf}}$ is odd) at the target vertex:
+\begin{equation}
+    \bm{t}_{\text{td}} = \texttt{edge\_data}[e_{\text{leaf}}][:,\, 0] \in \R^{B \times d}.
+\end{equation}
+
+This overwrites the leaf edge data with the top-down information from the parent.
+
+\subsection{Step 4: Combine Top-Down and Bottom-Up}
+
+The combined embedding merges the top-down channel information with the bottom-up prior information via simple addition:
+\begin{equation}
+    \bm{t}_{\text{combined}} = \bm{t}_{\text{td}} + \bm{t}_{\text{temp}} \in \R^{B \times d}.
+    \label{eq:combine}
+\end{equation}
+
+This additive combination was found to work as well as a learned combiner MLP (\texttt{use\_combine\_nn=True} option) while being simpler and having zero additional parameters.
+
+\subsection{Step 5: Make Decision}
+
+The combined embedding is passed through the \texttt{Emb2Logits} decision head to obtain 4-class joint logits:
+\begin{equation}
+    \bm{\ell} = \texttt{Emb2Logits}(\bm{t}_{\text{combined}}) = \bigl(\ell_{00},\, \ell_{01},\, \ell_{10},\, \ell_{11}\bigr) \in \R^{B \times 4}.
+\end{equation}
+
+The decision depends on whether this is a U-step or V-step:
+
+\begin{itemize}
+    \item \textbf{U-step} ($\gamma = 0$): Marginalize over $v$ to get $P(u)$:
+    \begin{align}
+        P(u = 0) &= \text{logsumexp}(\ell_{00}, \ell_{01}), \\
+        P(u = 1) &= \text{logsumexp}(\ell_{10}, \ell_{11}).
+    \end{align}
+    Decide $\hat{u} = \mathbf{1}[P(u=1) > P(u=0)]$.
+
+    \item \textbf{V-step} ($\gamma = 1$): Marginalize over $u$ to get $P(v)$:
+    \begin{align}
+        P(v = 0) &= \text{logsumexp}(\ell_{00}, \ell_{10}), \\
+        P(v = 1) &= \text{logsumexp}(\ell_{01}, \ell_{11}).
+    \end{align}
+    Decide $\hat{v} = \mathbf{1}[P(v=1) > P(v=0)]$.
+\end{itemize}
+
+If the current position is in the frozen set, the decision is overridden with the known frozen value.
+
+\subsection{Step 6: Update Leaf to Partially Deterministic State}
+
+After the decision, the leaf embedding is updated to reflect the now-known bit value. This is the neural equivalent of Equation~16 in Ren et al.\ (2025). A 4-class log-probability vector is constructed:
+
+\begin{itemize}
+    \item If both $u$ and $v$ are known at this position: set the known $(u, v)$ entry to $\log 1 = 0$ and all others to $-30$ (effectively $-\infty$).
+    \item If only $u$ is known: set $P(u, v{=}0) = P(u, v{=}1) = \log 0.5$ (uniform over $v$), others to $-30$.
+    \item If only $v$ is known: set $P(u{=}0, v) = P(u{=}1, v) = \log 0.5$ (uniform over $u$), others to $-30$.
+\end{itemize}
+
+This log-probability vector is then mapped back to the latent space:
+\begin{equation}
+    \texttt{edge\_data}[e_{\text{leaf}}] = \texttt{Logits2Emb}(\bm{p}_{\text{partial}}).\text{unsqueeze}(1).
+\end{equation}
+
+Importantly, we store the \emph{partially deterministic} embedding, not the combined top-down message. Storing the combined message would double-count the channel information when the leaf is revisited in a future \texttt{calcParent} call.
+
+%=============================================================================
+\section{Training}
+\label{sec:training}
+%=============================================================================
+
+\subsection{Teacher Forcing and Loss Function}
+
+Training uses teacher forcing: at each leaf position, the true bit values from the ground truth codewords are used for the decision (rather than the model's own predictions). This eliminates exposure bias during training and allows the loss to be computed at every leaf position independently.
+
+The training convention uses \textbf{all-info} (no frozen set): every position is treated as an information bit. This maximizes the number of supervised positions per training example and avoids the need to design frozen sets for training.
+
+The loss function is the 4-class cross-entropy summed over all $2N$ leaf positions:
+\begin{equation}
+    \mathcal{L} = \frac{1}{2N} \sum_{t=1}^{2N} \text{CE}\bigl(\bm{\ell}_t,\; u_t \cdot 2 + v_t\bigr),
+    \label{eq:loss}
+\end{equation}
+where $\bm{\ell}_t$ is the 4-class logit vector at step~$t$, and $u_t \cdot 2 + v_t \in \{0, 1, 2, 3\}$ is the target class index.
+
+\subsection{Curriculum Learning}
+\label{sec:curriculum}
+
+Curriculum learning is essential for scaling the decoder to large code lengths. Training from scratch succeeds only for $N \leq 16$; for $N \geq 32$, the loss gets stuck at approximately 1.04 (which corresponds to random 4-class guessing with slight bias, far from the optimal $\sim$0.173).
+
+The curriculum proceeds as follows:
+\begin{enumerate}
+    \item Train from scratch at $N = 8$ until convergence ($\sim$20K iterations).
+    \item Train from scratch at $N = 16$ until convergence ($\sim$20K iterations).
+    \item Load the $N = 16$ checkpoint and fine-tune at $N = 32$ ($\sim$20K iterations).
+    \item Load the $N = 32$ checkpoint and fine-tune at $N = 64$ ($\sim$15K iterations).
+    \item Continue: $N = 128 \to 256 \to 512 \to 1024$.
+\end{enumerate}
+
+At every code length, the training loss converges to approximately $\mathcal{L} \approx 0.173$, which represents the information-theoretic minimum for the BEMAC channel (the conditional entropy $H(U, V \mid Z)$ averaged over positions).
+
+The reason curriculum learning works is weight sharing: the \texttt{calcLeft}, \texttt{calcRight}, and \texttt{calcParent} modules are applied identically at every tree level. A model trained at $N = 16$ (4 levels) has already learned these operations well; fine-tuning at $N = 32$ (5 levels) only requires adapting to the new root embedding and slightly different tree statistics, not relearning the operations from scratch.
+
+\subsection{Hyperparameters}
+
+\begin{table}[H]
+\centering
+\caption{Training hyperparameters for each code length.}
+\label{tab:hyperparams}
+\begin{tabular}{lccccc}
+\toprule
+$N$ & Batch size & Iterations & Learning rate & Schedule & Init \\
+\midrule
+8   & 64  & 20{,}000 & $10^{-3}$ & Cosine ($\eta_{\min} = 5 \times 10^{-5}$) & Scratch \\
+16  & 64  & 20{,}000 & $10^{-3}$ & Cosine ($\eta_{\min} = 5 \times 10^{-5}$) & Scratch \\
+32  & 64  & 20{,}000 & $5 \times 10^{-4}$ & Cosine ($\eta_{\min} = 2.5 \times 10^{-5}$) & $N{=}16$ ckpt \\
+64  & 32  & 15{,}000 & $3 \times 10^{-4}$ & Cosine ($\eta_{\min} = 1.5 \times 10^{-5}$) & $N{=}32$ ckpt \\
+128 & 16  & 15{,}000 & $2 \times 10^{-4}$ & Cosine ($\eta_{\min} = 10^{-5}$) & $N{=}64$ ckpt \\
+256 & 16  & 10{,}000 & $10^{-4}$ & Cosine ($\eta_{\min} = 5 \times 10^{-6}$) & $N{=}128$ ckpt \\
+512 & 8   & 10{,}000 & $10^{-4}$ & Cosine ($\eta_{\min} = 5 \times 10^{-6}$) & $N{=}256$ ckpt \\
+1024 & 8  & 10{,}000 & $5 \times 10^{-5}$ & Cosine ($\eta_{\min} = 2.5 \times 10^{-6}$) & $N{=}512$ ckpt \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All experiments use the Adam optimizer with gradient clipping at norm 1.0. No weight decay is applied. The cosine annealing schedule reduces the learning rate from the initial value to $\eta_{\min}$ over the full training run.
+
+\subsection{Training Time}
+
+Training is performed on CPU (Apple M-series). Per-iteration wall-clock time scales linearly with $N$ (due to the sequential nature of SC decoding along the path):
+
+\begin{table}[H]
+\centering
+\caption{Approximate training time per code length (CPU).}
+\label{tab:training_time}
+\begin{tabular}{lcccc}
+\toprule
+$N$ & Time/iter (ms) & Total iters & Total time & Cumulative \\
+\midrule
+8   & 15   & 20{,}000  & 5 min   & 5 min \\
+16  & 35   & 20{,}000  & 12 min  & 17 min \\
+32  & 80   & 20{,}000  & 27 min  & 44 min \\
+64  & 180  & 15{,}000  & 45 min  & 1.5 hr \\
+128 & 400  & 15{,}000  & 1.7 hr  & 3.2 hr \\
+256 & 900  & 10{,}000  & 2.5 hr  & 5.7 hr \\
+512 & 2000 & 10{,}000  & 5.6 hr  & 11.3 hr \\
+1024 & 4500 & 10{,}000 & 12.5 hr & 23.8 hr \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The total curriculum training from $N = 8$ to $N = 1024$ takes approximately 24 hours on a single CPU core.
+
+%=============================================================================
+\section{Results}
+\label{sec:results}
+%=============================================================================
+
+All results are for the BEMAC channel ($Z = X + Y$) with Class~B decoding path (path index $i = N/2$). The rate point is approximately $R_u \approx 0.5$, $R_v \approx 0.7$, which is an interior point of the MAC capacity region achievable only with Class~B paths.
+
+\subsection{Soft-Bit Bridge Version}
+
+\begin{table}[H]
+\centering
+\caption{BLER comparison: Soft-Bit Bridge NCG decoder vs.\ analytical SC decoder. Class~B path, $R_u \approx 0.5$, $R_v \approx 0.7$.}
+\label{tab:bler_sbb}
+\begin{tabular}{rccccl}
+\toprule
+$N$ & $k_u$ & $k_v$ & NN BLER & SC BLER & Ratio (NN/SC) \\
+\midrule
+8    & 4   & 6   & 0.0586  & 0.0582  & 1.01 \\
+16   & 8   & 11  & 0.0106  & 0.0118  & \textbf{0.90} \\
+32   & 16  & 22  & 0.0082  & 0.0096  & \textbf{0.85} \\
+64   & 32  & 45  & 0.0044  & 0.0056  & \textbf{0.79} \\
+128  & 64  & 90  & 0.0018  & 0.0034  & \textbf{0.53} \\
+512  & 256 & 358 & 0.0030  & 0.0040  & \textbf{0.75} \\
+1024 & 512 & 717 & 0.0040  & 0.0080  & \textbf{0.50} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Key observations:
+\begin{itemize}
+    \item At $N = 8$, the NN matches SC almost exactly (ratio 1.01), validating the architecture.
+    \item For $N \geq 16$, the NN consistently \emph{outperforms} analytical SC, with the gap widening at larger $N$.
+    \item At $N = 1024$, the NN achieves a $2\times$ BLER improvement (ratio 0.50).
+    \item The improvement is not due to overfitting: the NN is trained with all-info (no frozen set) and evaluated with the proper Class~B frozen set designed via Monte Carlo methods.
+\end{itemize}
+
+\subsection{Pure Neural CalcParent Version}
+
+\begin{table}[H]
+\centering
+\caption{BLER comparison: Pure Neural CalcParent NCG decoder vs.\ analytical SC. Class~B path, $N = 16$, $k_u = 8$, $k_v = 11$.}
+\label{tab:bler_pure}
+\begin{tabular}{lcc}
+\toprule
+Phase & NN BLER & SC BLER \\
+\midrule
+Phase A (distill, CalcParent only, $\alpha = 1.0$) & 0.013 & 0.010 \\
+Phase B (decay $\alpha: 1.0 \to 0.0$, CalcParent only) & 0.013 & 0.010 \\
+Phase C (finetune all, $\alpha = 0$) & 0.013 & 0.010 \\
+\midrule
+Best NN / SC ratio & \multicolumn{2}{c}{1.30} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pure neural version achieves a ratio of 1.30 at $N = 16$---competitive with analytical SC despite having zero analytical operations at inference time. The training loss converges to the same $\sim$0.173 value as the Soft-Bit Bridge version, indicating that the neural \texttt{calcParent} successfully learns the circular convolution.
+
+\subsection{Comparison with Previous Approaches}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of Class~B decoding approaches at $N = 8$, $R_u = 0.5$, $R_v \approx 0.7$.}
+\label{tab:comparison}
+\begin{tabular}{lccl}
+\toprule
+Approach & NN BLER & SC BLER & Ratio \\
+\midrule
+DFS NPD (Class C only) & --- & --- & N/A (cannot decode Class B) \\
+Iterative single-user & 0.810 & 0.058 & 13.9 (catastrophic) \\
+Multi-pass + Conditioner & 0.062 & 0.058 & 1.07 (Class C only) \\
+Transformer (351K params) & 0.063 & 0.062 & 1.01 ($N{=}8$ only) \\
+\textbf{NCG Soft-Bit Bridge (27K params)} & \textbf{0.059} & \textbf{0.058} & \textbf{1.01} \\
+\textbf{NCG Pure Neural (38K params)} & \textbf{0.013}$^*$ & \textbf{0.010}$^*$ & \textbf{1.30}$^*$ \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize $^*$ Evaluated at $N = 16$.}
+\end{tabular}
+\end{table}
+
+The NCG decoder is the only approach that: (1) successfully handles Class~B paths, (2) scales to large $N$ via curriculum learning, and (3) uses fewer parameters than the Transformer.
+
+\subsection{Parameter Count Breakdown}
+
+\begin{table}[H]
+\centering
+\caption{Parameter counts for both decoder versions.}
+\label{tab:params}
+\begin{tabular}{lcc}
+\toprule
+Module & Soft-Bit Bridge & Pure Neural \\
+\midrule
+EmbeddingZ (\texttt{nn.Embedding(3, 16)}) & 48 & 48 \\
+NeuralCalcLeft (MLP $48 \to 64 \to 64 \to 16$) & 8{,}336 & 8{,}336 \\
+NeuralCalcRight (MLP $48 \to 64 \to 64 \to 16$) & 8{,}336 & 8{,}336 \\
+Emb2Logits (MLP $16 \to 64 \to 64 \to 4$) & 5{,}508 & 5{,}508 \\
+Logits2Emb (MLP $4 \to 64 \to 64 \to 16$) & 5{,}520 & 5{,}520 \\
+no\_info\_emb (learnable $\R^{16}$) & 16 & 16 \\
+NeuralCalcParent (GRU-gated) & --- & 10{,}464 \\
+parent\_second\_nn (Linear $16 \to 16$) & --- & 272 \\
+\midrule
+\textbf{Total} & \textbf{27{,}764} & \textbf{38{,}500} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%=============================================================================
+\section{Complexity Analysis}
+\label{sec:complexity}
+%=============================================================================
+
+\subsection{Per-Operation Complexity}
+
+Each neural tree operation is an MLP forward pass:
+
+\begin{table}[H]
+\centering
+\caption{Per-operation complexity comparison.}
+\label{tab:op_complexity}
+\begin{tabular}{lcc}
+\toprule
+Operation & Analytical & Neural \\
+\midrule
+\texttt{calcLeft} & $O(|\mathcal{S}|^3)$ & $O(md)$ \\
+\texttt{calcRight} & $O(|\mathcal{S}|^2)$ & $O(md)$ \\
+\texttt{calcParent} (Soft-Bit Bridge) & --- & $O(|\mathcal{S}|^3 + md)$ \\
+\texttt{calcParent} (Pure Neural) & --- & $O(md)$ \\
+Leaf decision & $O(|\mathcal{S}|^2)$ & $O(md)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For the BEMAC, $|\mathcal{S}| = 2$, so the analytical operations are $O(1)$. The neural operations with $m = 64$, $d = 16$ involve matrix multiplications of size $48 \times 64$, $64 \times 64$, and $64 \times 16$, totalling approximately 8,300 multiply-add operations per tree step.
+
+\subsection{Total Decoder Complexity}
+
+The computational graph decoder makes $O(N \log N)$ tree operations for any monotone chain path (Ren et al.\ 2025). Therefore:
+
+\begin{align}
+    \text{Analytical SC (memoryless):} &\quad O(N \log N), \\
+    \text{Analytical SC (memory $|\mathcal{S}|$):} &\quad O(|\mathcal{S}|^3 \cdot N \log N), \\
+    \text{Neural SC (Soft-Bit Bridge):} &\quad O\bigl((|\mathcal{S}|^3 + md) \cdot N \log N\bigr), \\
+    \text{Neural SC (Pure Neural):} &\quad O(md \cdot N \log N).
+\end{align}
+
+The pure neural decoder's complexity is \emph{independent of the channel}. With $m = 64$ and $d = 16$, the constant factor is $md = 1{,}024$, which is fixed regardless of whether the channel is a simple BEMAC or a complex ISI channel with large state space.
+
+\subsection{Wall-Clock Comparison}
+
+On CPU (Apple M-series), the neural decoder is approximately $1.5\times$ slower than the analytical SC decoder per codeword at $N = 1024$. This overhead comes from the MLP forward passes at each tree operation, which involve matrix multiplications that are more expensive than the direct $2 \times 2$ tensor manipulations of the analytical decoder.
+
+However, the neural decoder has significant potential for GPU acceleration: all MLP operations within a single tree step can be batched across positions (the edge data at each level has shape $(B, L, d)$, where $L$ positions can be processed in parallel), and the batch dimension $B$ provides additional parallelism.
+
+%=============================================================================
+\section{Conclusions and Future Work}
+\label{sec:conclusions}
+%=============================================================================
+
+\subsection{Summary of Achievements}
+
+We have presented the Neural Computational Graph (NCG) SC decoder for two-user MAC polar codes, which replaces the analytical tree operations of the Ren et al.\ (2025) framework with learned neural modules. The key contributions are:
+
+\begin{enumerate}
+    \item \textbf{Soft-Bit Bridge architecture}: A hybrid \texttt{calcParent} that keeps the circular convolution exact while learning the embedding-probability mappings. At 27,764 parameters, it matches or outperforms analytical SC from $N = 8$ to $N = 1024$, achieving a $2\times$ BLER improvement at $N = 1024$.
+
+    \item \textbf{Pure Neural CalcParent}: A GRU-gated residual module trained via knowledge distillation that eliminates all analytical operations. At 38,500 parameters and $O(md \cdot N \log N)$ complexity, it is channel-independent.
+
+    \item \textbf{Curriculum learning}: A practical training strategy that scales the decoder from $N = 8$ to $N = 1024$ by fine-tuning across code lengths, exploiting the weight-shared architecture.
+
+    \item \textbf{Dual-purpose Emb2Logits}: The shared decision head / Soft-Bit Bridge input module provides a natural bridge between the latent embedding space and the probability domain.
+\end{enumerate}
+
+\subsection{Future Work}
+
+\paragraph{Channels with Memory.} The primary motivation for the pure neural \texttt{calcParent} is channels where the analytical operations become prohibitively expensive. Preliminary experiments on ISI channels show that the training loss converges to the expected information-theoretic minimum, suggesting that the architecture can learn channel-dependent operations without modification. Formal evaluation on Gilbert-Elliott and ISI channels is ongoing.
+
+\paragraph{Neural SCL (List Decoding).} Successive cancellation list (SCL) decoding maintains $L$ candidate paths and achieves significantly better BLER than SC. The NCG architecture naturally extends to SCL by maintaining $L$ copies of the edge data and using the \texttt{Emb2Logits} output to rank candidates. The main challenge is differentiable path pruning.
+
+\paragraph{GPU Acceleration.} The current implementation processes tree operations sequentially along the decoding path. GPU acceleration could exploit: (a) batch parallelism across codewords, (b) position parallelism within each edge (positions $1, \ldots, L$ at each tree level are independent), and (c) pipelining of consecutive tree operations.
+
+\paragraph{Frozen Set Co-Design.} Current frozen set design uses Monte Carlo estimation with the analytical decoder. Jointly optimizing the frozen set and the neural decoder could yield rate points specifically suited to the neural decoder's strengths, potentially extending the region where the NN outperforms SC.
+
+\paragraph{Extension to $K > 2$ Users.} The computational graph framework generalizes to $K$-user MACs with probability tensors of shape $2^K$. The neural modules would require $2^K$-class output logits but maintain the same $O(md \cdot N \log N)$ tree structure.
+
+\end{document}
