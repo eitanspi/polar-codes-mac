@@ -36,16 +36,17 @@
   },
   "512": {
     "N": 512,
-    "nn_bler": 0.0004,
-    "sc_bler": 0.0004,
-    "ratio": 1.0,
-    "cw": 5000
+    "nn_bler": 0.0,
+    "sc_bler": 0.0,
+    "ratio": 0.0,
+    "cw": 10000,
+    "note": "zero errors with 50K MC frozen sets"
   },
   "1024": {
     "N": 1024,
-    "nn_bler": 0.0003,
-    "sc_bler": 0.0005,
-    "ratio": 0.6,
-    "cw": 5000
+    "nn_bler": 0.0001,
+    "sc_bler": 0.0001,
+    "ratio": 1.0,
+    "cw": 10000
   }
 }
