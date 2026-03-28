@@ -1,0 +1,339 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{pdflscape}
+
+\definecolor{upcolor}{rgb}{0.8,0.0,0.0}
+\definecolor{goodcolor}{rgb}{0.0,0.5,0.0}
+\newcommand{\up}[1]{\textcolor{upcolor}{\textbf{#1}}}
+\newcommand{\good}[1]{\textcolor{goodcolor}{#1}}
+
+\title{Non-Monotonic BLER Results:\\Analysis and Root Causes}
+\author{Automated Simulation Audit}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+
+Out of 37 simulation result sets examined, \textbf{4 are classified as GOOD}
+(monotonically decreasing BLER with increasing $N$) and \textbf{33 are classified
+as WEIRD} (exhibiting non-monotonicity, zero-to-nonzero transitions, or
+insufficient error counts). The high ratio of weird results is expected given
+the nature of polar code MAC simulations: rate quantization at small $N$,
+finite codeword counts, and operating near capacity all contribute to
+non-ideal BLER curves.
+
+\subsection{Root Cause Categories}
+
+We identify five main root causes:
+
+\begin{enumerate}
+\item \textbf{Rate quantization (RQ):} At small $N$ (8, 16, 32), the actual rate $k/N$ can deviate significantly from the target rate. When $N$ doubles but the quantized rate overshoots the target, the effective operating point is closer to capacity, causing BLER to increase.
+
+\item \textbf{Insufficient codewords / few errors (FE):} When $\text{BLER} \times \text{CW} < 5$, the measured BLER has high variance. Zero-to-nonzero transitions at large $N$ are statistical artifacts.
+
+\item \textbf{Near capacity operation (NC):} High rate points (e.g., $R_u=0.55, R_v=0.77$ on BE-MAC with capacity 0.50/1.00) exhibit slow polarization and persistent non-monotonicity even at moderate $N$.
+
+\item \textbf{NN training artifact (NN):} Neural decoders may not generalize perfectly across all $N$, especially when trained at one block length and evaluated at another.
+
+\item \textbf{Frozen set design (FD):} Class B symmetric path creates challenging frozen set assignments where small changes in $N$ can lead to suboptimal bit allocations.
+\end{enumerate}
+
+\section{Summary Table of All Weird Results}
+
+\begin{landscape}
+\begin{longtable}{p{5.5cm}llp{7cm}l}
+\toprule
+\textbf{Result} & \textbf{Decoder} & \textbf{Non-monotone at} & \textbf{Description} & \textbf{Root Cause} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Result} & \textbf{Decoder} & \textbf{Non-monotone at} & \textbf{Description} & \textbf{Root Cause} \\
+\midrule
+\endhead
+
+% ABNMAC
+abnmac classA Ru40 Rv20 SCL32 & SCL & N=64,128 & Few errors ($<$5) at N=64,128 & FE \\
+abnmac classB Ru30 Rv30 SCL32 & SCL & N=16 & BLER 0.014$\to$0.044 (3.1$\times$) & RQ \\
+abnmac classB Ru42 Rv42 SCL32 & SCL & N=256,512 & Few errors ($<$5) at N=256,512 & FE \\
+abnmac classC Ru20 Rv40 SC & SC & N=64 & BLER 0.035$\to$0.046 (1.3$\times$) & RQ \\
+abnmac classC Ru20 Rv40 SCL32 & SCL & N=64 & BLER 0.014$\to$0.020 (1.4$\times$) & RQ \\
+\midrule
+
+% BEMAC
+bemac classA Ru62 Rv62 SC & SC & N=32,512 & BLER bumps; 1 error at N=1024 & RQ+FE \\
+bemac classA Ru62 Rv62 nn\_vs\_sc & SC & N=512 & BLER 0.0025$\to$0.003; 3 errors & FE \\
+bemac classB Ru31 Rv44 SC & SC & N=8,64,256 & BLER=0 at N=8; 2.9$\times$ bump at N=64 & RQ+FD \\
+bemac classB Ru50 Rv70 nn\_vs\_sc & SC,NN & N=1024 & 0$\to$0.0001 at N=1024 (1 error) & FE \\
+bemac classB Ru50 Rv70 scl32 & SCL & N=32 & BLER 0.008$\to$0.0082 (1.03$\times$) & FE \\
+bemac classB Ru55 Rv77 SC & SC & N=16,32 & BLER 0.059$\to$0.075$\to$0.163 & NC+RQ \\
+bemac classC Ru30 Rv60 SC & SC & N=32 & BLER 0.086$\to$0.087 (1.02$\times$) & RQ \\
+bemac classC Ru30 Rv60 nn\_vs\_sc & SC & N=32 & BLER 0.092$\to$0.099 (1.08$\times$) & RQ \\
+bemac classC Ru30 Rv60 nn\_vs\_sc\_vs\_scl & SC,SCL,NN & N=32(SC) & SC: 1.08$\times$; SCL: stat.\ noise & RQ+FE \\
+bemac classC Ru35 Rv70 nn\_vs\_sc & SC & N=16,128 & BLER 0.151$\to$0.187; 0.125$\to$0.137 & NC+RQ \\
+bemac classC Ru35 Rv70 nn\_vs\_sc\_vs\_scl & SC,SCL & N=16,128(SC) & SC same; SCL 0$\to$0.001 at N=1024 & NC+FE \\
+\midrule
+
+% GMAC 3dB
+gmac 3dB classA Ru36 Rv19 SC & SC & N=32 & BLER 0.120$\to$0.164 (1.37$\times$) & RQ \\
+gmac 3dB classA Ru36 Rv19 SCL32 & SCL & N=128 & 4 errors at N=128 & FE \\
+gmac 3dB classB Ru28 Rv28 SC & SC & N=16,32 & BLER 0.089$\to$0.125$\to$0.155 & RQ+FD \\
+gmac 3dB classB Ru28 Rv28 SCL32 & SCL & N=16 & BLER 0.061$\to$0.128 (2.1$\times$) & RQ \\
+gmac 3dB classB Ru39 Rv39 SC & SC & N=16,32 & BLER 0.150$\to$0.180$\to$0.210 & NC+RQ \\
+gmac 3dB classB Ru39 Rv39 SCL32 & SCL & N=16,32 & BLER 0.131$\to$0.143$\to$0.196 & NC+RQ \\
+gmac 3dB classC Ru19 Rv36 SC & SC & N=32 & BLER 0.118$\to$0.183 (1.56$\times$) & RQ \\
+\midrule
+
+% GMAC 6dB
+gmac 6dB classA Ru46 Rv23 SC & SC & N=256,1024 & BLER 0.0003$\to$0.0025 (8.4$\times$) & FE+FD \\
+gmac 6dB classA Ru46 Rv23 SCL32 & SCL & N=64 & 4 errors at N=64 & FE \\
+gmac 6dB classB Ru34 Rv34 SC & SC & N=512,1024 & 0$\to$0.0002$\to$0.0006 & FE \\
+gmac 6dB classB Ru34 Rv34 SCL32 & SCL & N=64 & 3 errors at N=64 & FE \\
+gmac 6dB classB Ru48 Rv48 SCL32 & SCL & N=16 & BLER 0.037$\to$0.067 (1.82$\times$) & RQ \\
+gmac 6dB classB Ru48 Rv48 mlp\_nn\_vs\_sc & NN & N=512,1024 & NN BLER 0.020$\to$0.045$\to$0.069 & NN \\
+gmac 6dB classC Ru23 Rv46 SC & SC & N=16,1024 & BLER 0.113$\to$0.170; 0.0002$\to$0.0004 & RQ+FE \\
+gmac 6dB classC Ru23 Rv46 SCL32 & SCL & N=16 & BLER 0.096$\to$0.154 (1.60$\times$) & RQ \\
+gmac 6dB classC Ru33 Rv64 SC & SC & N=32 & BLER 0.131$\to$0.147 (1.12$\times$) & NC+RQ \\
+gmac 6dB classC Ru33 Rv64 SCL32 & SCL & N=32 & BLER 0.076$\to$0.132 (1.74$\times$); few errors at large $N$ & RQ+FE \\
+
+\bottomrule
+\end{longtable}
+\end{landscape}
+
+\section{Detailed Analysis of Weird Results}
+
+\subsection{Category 1: Rate Quantization (RQ)}
+
+These results exhibit non-monotonicity at small $N$ because $k_u/N$ and $k_v/N$ cannot match the target rate exactly. When the quantized rate overshoots the target, the code operates closer to (or beyond) capacity, and BLER increases.
+
+\subsubsection{ABN-MAC Class B, $R_u=0.30$, $R_v=0.30$, SCL-32}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+8 & 2 & 2 & 0.250 & 0.250 & 0.014 \\
+\textbf{16} & \textbf{5} & \textbf{5} & \textbf{0.3125} & \textbf{0.3125} & \up{0.044} \\
+32 & 10 & 10 & 0.3125 & 0.3125 & 0.016 \\
+64 & 19 & 19 & 0.2969 & 0.2969 & 0.016 \\
+128 & 38 & 38 & 0.2969 & 0.2969 & 0.000 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} At $N=8$, the actual sum rate is 0.50 (well below capacity 1.20). At $N=16$, it jumps to 0.625 — a 25\% increase. At $N=32$ the rate stays at 0.625 but polarization improves, so BLER drops. The bump at $N=16$ is purely a rate quantization artifact.
+
+\subsubsection{ABN-MAC Class C, $R_u=0.20$, $R_v=0.40$, SC}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+32 & 6 & 13 & 0.1875 & 0.4062 & 0.0345 \\
+\textbf{64} & \textbf{13} & \textbf{26} & \textbf{0.2031} & \textbf{0.4062} & \up{0.046} \\
+128 & 26 & 51 & 0.2031 & 0.3984 & 0.038 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} At $N=64$, $R_u$ jumps from 0.1875 to 0.2031. The higher rate offsets polarization gains. This is a standard rate quantization effect.
+
+\subsubsection{GMAC 3dB Class A, $R_u=0.36$, $R_v=0.19$, SC}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+16 & 6 & 3 & 0.375 & 0.1875 & 0.1196 \\
+\textbf{32} & \textbf{12} & \textbf{6} & \textbf{0.375} & \textbf{0.1875} & \up{0.1638} \\
+64 & 23 & 12 & 0.3594 & 0.1875 & 0.0438 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} Same rates at $N=16$ and $N=32$, yet BLER increases. At $N=32$ the rate 0.375 is very close to the class A capacity $I(Z;X)=0.389$, and polarization at $N=32$ may actually produce worse bit-channels than at $N=16$ for this particular path. At $N=64$, $R_u$ drops to 0.359 and polarization kicks in.
+
+\subsubsection{GMAC 3dB Class B, $R_u=0.28$, $R_v=0.28$, SC}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+8 & 2 & 2 & 0.250 & 0.250 & 0.0892 \\
+\textbf{16} & \textbf{4} & \textbf{4} & \textbf{0.250} & \textbf{0.250} & \up{0.1246} \\
+\textbf{32} & \textbf{9} & \textbf{9} & \textbf{0.2812} & \textbf{0.2812} & \up{0.1552} \\
+64 & 18 & 18 & 0.2812 & 0.2812 & 0.0666 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} The Class B symmetric path creates a challenging situation. At $N=16$ the rate stays at 0.25 but BLER goes up — this indicates the frozen set design for the symmetric path at $N=16$ is suboptimal (frozen set design quality issue). At $N=32$, rate jumps to 0.281 and BLER peaks. From $N=64$ onwards, monotonic decrease.
+
+\subsubsection{BE-MAC Class B, $R_u=0.31$, $R_v=0.44$, SC}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+8 & 2 & 4 & 0.250 & 0.500 & \good{0.000} \\
+16 & 5 & 7 & 0.3125 & 0.4375 & 0.0718 \\
+32 & 10 & 14 & 0.3125 & 0.4375 & 0.0094 \\
+\textbf{64} & \textbf{20} & \textbf{28} & \textbf{0.3125} & \textbf{0.4375} & \up{0.0273} \\
+128 & 40 & 56 & 0.3125 & 0.4375 & 0.0047 \\
+\textbf{256} & \textbf{80} & \textbf{112} & \textbf{0.3125} & \textbf{0.4375} & \up{0.0061} \\
+512 & 160 & 224 & 0.3125 & 0.4375 & 0.0020 \\
+1024 & 320 & 448 & 0.3125 & 0.4375 & 0.0005 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} This is a striking case. BLER=0 at $N=8$ (rate far below capacity), then oscillates at $N=64$ and $N=256$. The rates are \emph{identical} across all $N\ge16$, so this is NOT rate quantization. The pattern (odd/even $\log_2 N$ oscillation) strongly suggests a \textbf{frozen set design issue}: the Class B path's bit allocation at certain $N$ creates suboptimal frozen sets. With 50K codewords, the errors are statistically reliable (1364 errors at $N=64$). This is the most concerning weird result — it suggests the frozen set design for Class B on BE-MAC has structural issues at $N=64$ and $N=256$.
+
+\subsection{Category 2: Insufficient Errors (FE)}
+
+These results have BLER values based on very few errors ($<5$), making the measurements unreliable. The non-monotonicity is a statistical artifact.
+
+\subsubsection{Representative examples}
+
+\begin{tabular}{llccc}
+\toprule
+\textbf{Result} & \textbf{N} & \textbf{BLER} & \textbf{CW} & \textbf{Errors} \\
+\midrule
+abnmac classA Ru40 Rv20 SCL32 & 64 & 0.006 & 500 & 3.0 \\
+abnmac classA Ru40 Rv20 SCL32 & 128 & 0.002 & 500 & 1.0 \\
+bemac classA Ru62 Rv62 SC & 1024 & 7e-5 & 14236 & 1.0 \\
+bemac classB Ru50 Rv70 nn\_vs\_sc & 1024 & 1e-4 & 10000 & 1.0 \\
+gmac 6dB classA Ru46 Rv23 SC & 512 & 2e-4 & 10000 & 2.0 \\
+gmac 6dB classB Ru34 Rv34 SC & 512 & 2e-4 & 10000 & 2.0 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Recommendation:} Re-run with more codewords until at least 50 errors are accumulated at each $N$, or use early termination with a minimum error count.
+
+\subsection{Category 3: Near Capacity Operation (NC)}
+
+These results operate close to the capacity boundary, where polarization is slow and BLER decreases slowly. Rate quantization effects are amplified.
+
+\subsubsection{BE-MAC Class B, $R_u=0.55$, $R_v=0.77$, SC}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+8 & 4 & 6 & 0.500 & 0.750 & 0.0586 \\
+\textbf{16} & \textbf{9} & \textbf{12} & \textbf{0.5625} & \textbf{0.750} & \up{0.0749} \\
+\textbf{32} & \textbf{18} & \textbf{25} & \textbf{0.5625} & \textbf{0.7812} & \up{0.1635} \\
+64 & 35 & 50 & 0.5469 & 0.7812 & 0.0992 \\
+128 & 71 & 99 & 0.5547 & 0.7734 & 0.0798 \\
+256 & 142 & 198 & 0.5547 & 0.7734 & 0.0466 \\
+512 & 283 & 397 & 0.5527 & 0.7754 & 0.0207 \\
+1024 & 567 & 794 & 0.5537 & 0.7754 & 0.0058 \\
+4096 & 2267 & 3174 & 0.5535 & 0.7749 & 0.0010 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} Target $R_u=0.55$ vs capacity $I(Z;X)=0.50$ — this is \textbf{above the individual user capacity}! The sum rate target of 1.32 vs sum capacity 1.50 is feasible, but the asymmetric allocation pushes $R_u$ beyond its marginal capacity. The high BLER at N=32 ($R_v=0.781$ vs $I(Z;Y|X)=1.00$, feasible, but $R_u=0.5625 > 0.50$) confirms this. BLER still decreases from $N=64$ onward because the Class B path allows joint decoding to succeed even when individual rates exceed marginal capacity — but convergence is very slow.
+
+\subsubsection{BE-MAC Class C, $R_u=0.35$, $R_v=0.70$, SC}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+8 & 3 & 6 & 0.375 & 0.750 & 0.1507 \\
+\textbf{16} & \textbf{6} & \textbf{11} & \textbf{0.375} & \textbf{0.6875} & \up{0.187} \\
+32 & 11 & 22 & 0.3438 & 0.6875 & 0.1313 \\
+64 & 22 & 45 & 0.3438 & 0.7031 & 0.1247 \\
+\textbf{128} & \textbf{45} & \textbf{90} & \textbf{0.3516} & \textbf{0.7031} & \up{0.1367} \\
+256 & 90 & 179 & 0.3516 & 0.6992 & 0.0916 \\
+512 & 179 & 358 & 0.3496 & 0.6992 & 0.0536 \\
+1024 & 358 & 716 & 0.3496 & 0.7002 & 0.0173 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} Sum rate 1.05 vs capacity 1.50 — well within capacity. But the Class C extreme path means $R_v=0.70$ vs $I(Z;Y|X)=1.00$, and polarization for the ``second'' user under Class C is slow. The bump at $N=16$ is rate quantization; the bump at $N=128$ ($R_u$ increases from 0.344 to 0.352) is a combined RQ + slow-polarization effect.
+
+\subsubsection{GMAC 3dB Class B, $R_u=R_v=0.39$, SC and SCL-32}
+
+\begin{tabular}{ccccccc}
+\toprule
+$N$ & $R_u$ & $R_v$ & Sum Rate & SC BLER & SCL BLER & Sym.\ Cap. \\
+\midrule
+8 & 0.375 & 0.375 & 0.750 & 0.150 & 0.131 & 0.555 \\
+\textbf{16} & \textbf{0.375} & \textbf{0.375} & \textbf{0.750} & \up{0.180} & \up{0.143} & 0.555 \\
+\textbf{32} & \textbf{0.375} & \textbf{0.375} & \textbf{0.750} & \up{0.210} & \up{0.196} & 0.555 \\
+64 & 0.391 & 0.391 & 0.781 & 0.153 & 0.070 & 0.555 \\
+1024 & 0.389 & 0.389 & 0.777 & 0.023 & 0.002 & 0.555 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} Sum rate 0.75--0.78 vs sum capacity 1.11 — this is 68--70\% of capacity. The per-user rate 0.39 vs symmetric capacity 0.555 is 70\%. The Class B path at these rates converges slowly. The SC non-monotonicity at $N=16,32$ (same rates!) indicates that polarization at these block lengths actually makes the Class B frozen set worse. SCL-32 fixes the issue from $N=64$ onward but still shows the bump at $N=32$.
+
+\subsection{Category 4: NN Training Artifacts (NN)}
+
+\subsubsection{GMAC 6dB Class B, $R_u=R_v\approx0.48$, MLP NN vs SC}
+
+\begin{tabular}{ccccc}
+\toprule
+$N$ & NN BLER & SC BLER & NN/SC & Codewords \\
+\midrule
+32 & 0.040 & 0.046 & 0.88 & 5000 \\
+64 & 0.026 & 0.025 & 1.03 & 50000 \\
+128 & 0.023 & 0.016 & 1.43 & 50000 \\
+256 & 0.020 & 0.005 & 4.35 & 50000 \\
+\textbf{512} & \up{0.045} & 0.001 & 40.9 & 50000 \\
+\textbf{1024} & \up{0.069} & 0.001 & 69.0 & 50000 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} The MLP neural decoder \emph{dramatically} degrades at $N\ge512$, with NN/SC ratio reaching 69$\times$. This is a clear NN generalization failure — the MLP architecture cannot scale to large block lengths. The SC decoder is well-behaved (monotonically decreasing).
+
+\subsection{Category 5: Frozen Set Design Issues (FD)}
+
+\subsubsection{GMAC 6dB Class A, $R_u=0.46$, $R_v=0.23$, SC}
+
+\begin{tabular}{cccccc}
+\toprule
+$N$ & $k_u$ & $k_v$ & $R_u$ & $R_v$ & BLER \\
+\midrule
+64 & 29 & 15 & 0.4531 & 0.2344 & 0.0040 \\
+128 & 58 & 30 & 0.4531 & 0.2344 & 0.0003 \\
+\textbf{256} & \textbf{117} & \textbf{59} & \textbf{0.457} & \textbf{0.2305} & \up{0.00253} \\
+512 & 233 & 119 & 0.4551 & 0.2324 & 0.0002 \\
+\textbf{1024} & \textbf{467} & \textbf{238} & \textbf{0.4561} & \textbf{0.2324} & \up{0.000625} \\
+\bottomrule
+\end{tabular}
+
+\textbf{Analysis:} The 8.4$\times$ BLER jump from $N=128$ to $N=256$ is the most suspicious pattern. Rate changes are tiny (0.453$\to$0.457). With 15000 codewords and 38 errors at $N=256$, this is statistically reliable. The Class A path at $N=256$ likely has a suboptimal frozen set — the MC-based design may need more trials at this block length. The bump at $N=1024$ (5 errors in 8000 CW) is borderline statistically reliable.
+
+\section{Good Results}
+
+The following 4 results show clean monotonic BLER decrease:
+
+\begin{enumerate}
+\item \textbf{bemac\_classC\_Ru25\_Rv50\_SC:} Clean decrease from 0.144 ($N=8$) to 0 ($N=1024$). Rates are exactly $R_u=0.25$, $R_v=0.50$ at all $N$ — perfect quantization.
+\item \textbf{gmac\_snr3dB\_classC\_Ru19\_Rv36\_SCL32:} Clean decrease from 0.208 to 0. SCL-32 fixes the non-monotonicity seen in the SC version.
+\item \textbf{gmac\_snr6dB\_classB\_Ru48\_Rv48\_SC:} Clean decrease from 0.072 to 0.001. Moderate rate below capacity.
+\item \textbf{gmac\_snr6dB\_classB\_Ru48\_Rv48\_nn\_vs\_sc:} Both NN and SC curves are monotonic (NCG neural decoder).
+\end{enumerate}
+
+\section{Recommendations}
+
+\begin{enumerate}
+\item \textbf{Increase codeword counts:} For all results with $<$50 errors, re-run with adaptive stopping (minimum 100 errors per point). This will resolve all FE-category issues.
+
+\item \textbf{Rate quantization at small $N$:} Accept as inherent limitation and start reporting from $N=32$ or $N=64$ to avoid misleading plots. Alternatively, plot BLER vs.\ \emph{actual} sum rate rather than vs.\ $N$.
+
+\item \textbf{Frozen set quality for Class B:} The \texttt{bemac\_classB\_Ru31\_Rv44} oscillation pattern (at fixed rates!) warrants investigation. Consider: (a) increasing MC trials from 50K to 500K, (b) trying density evolution instead of MC, (c) checking if the oscillation disappears with SCL decoding.
+
+\item \textbf{Near-capacity points:} Either accept slow convergence or reduce rates to provide more margin. The $R_u=0.55$ case exceeding marginal capacity should be flagged in publications.
+
+\item \textbf{MLP neural decoder:} The MLP architecture is not viable for $N>256$. Use the NCG (Neural Computational Graph) architecture which shows proper scaling behavior.
+
+\item \textbf{GMAC 6dB Class A $N=256$ bump:} Re-run with 500K MC trials for frozen set design and 100K codewords for evaluation. If the bump persists, this indicates a structural issue with the Class A path at $N=256$.
+\end{enumerate}
+
+\end{document}

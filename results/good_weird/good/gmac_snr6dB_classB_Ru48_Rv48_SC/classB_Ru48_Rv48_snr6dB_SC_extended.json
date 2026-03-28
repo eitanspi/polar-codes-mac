@@ -1,0 +1,126 @@
+{
+  "description": "GMAC 6dB Class B SC extended CW results",
+  "channel": "Gaussian MAC",
+  "snr_db": 6.0,
+  "sigma2": 0.251188643150958,
+  "class": "B",
+  "decoder": "SC (L=1)",
+  "path_i_frac": 0.5,
+  "timestamp": "2026-03-27T08:43:26.681087",
+  "new_results": {
+    "128": {
+      "ku": 62,
+      "kv": 62,
+      "Ru": 0.484375,
+      "Rv": 0.484375,
+      "new_errors": 241,
+      "new_cw": 15000,
+      "prev_errors": 76,
+      "prev_cw": 5000,
+      "total_errors": 317,
+      "total_cw": 20000,
+      "total_bler": 0.01585,
+      "time_s": 9.680835042148829
+    },
+    "256": {
+      "ku": 123,
+      "kv": 123,
+      "Ru": 0.48046875,
+      "Rv": 0.48046875,
+      "new_errors": 91,
+      "new_cw": 20000,
+      "prev_errors": 46,
+      "prev_cw": 10000,
+      "total_errors": 137,
+      "total_cw": 30000,
+      "total_bler": 0.004566666666666667,
+      "time_s": 27.627238333923742
+    },
+    "512": {
+      "ku": 247,
+      "kv": 247,
+      "Ru": 0.482421875,
+      "Rv": 0.482421875,
+      "new_errors": 41,
+      "new_cw": 40000,
+      "prev_errors": 12,
+      "prev_cw": 10000,
+      "total_errors": 53,
+      "total_cw": 50000,
+      "total_bler": 0.00106,
+      "time_s": 119.43177512497641
+    },
+    "1024": {
+      "ku": 493,
+      "kv": 493,
+      "Ru": 0.4814453125,
+      "Rv": 0.4814453125,
+      "new_errors": 42,
+      "new_cw": 40000,
+      "prev_errors": 9,
+      "prev_cw": 10000,
+      "total_errors": 51,
+      "total_cw": 50000,
+      "total_bler": 0.00102,
+      "time_s": 256.5628869170323
+    }
+  },
+  "existing": {
+    "8": {
+      "ku": 4,
+      "kv": 4,
+      "bler": 0.0724,
+      "errors": 362,
+      "cw": 5000
+    },
+    "16": {
+      "ku": 8,
+      "kv": 8,
+      "bler": 0.0638,
+      "errors": 319,
+      "cw": 5000
+    },
+    "32": {
+      "ku": 15,
+      "kv": 15,
+      "bler": 0.0456,
+      "errors": 228,
+      "cw": 5000
+    },
+    "64": {
+      "ku": 31,
+      "kv": 31,
+      "bler": 0.0246,
+      "errors": 123,
+      "cw": 5000
+    },
+    "128": {
+      "ku": 62,
+      "kv": 62,
+      "bler": 0.0152,
+      "errors": 76,
+      "cw": 5000
+    },
+    "256": {
+      "ku": 123,
+      "kv": 123,
+      "bler": 0.0046,
+      "errors": 46,
+      "cw": 10000
+    },
+    "512": {
+      "ku": 247,
+      "kv": 247,
+      "bler": 0.0012,
+      "errors": 12,
+      "cw": 10000
+    },
+    "1024": {
+      "ku": 493,
+      "kv": 493,
+      "bler": 0.0009,
+      "errors": 9,
+      "cw": 10000
+    }
+  }
+}

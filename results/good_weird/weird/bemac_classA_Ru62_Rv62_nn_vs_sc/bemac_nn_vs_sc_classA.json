@@ -1,0 +1,86 @@
+{
+  "16": {
+    "N": 16,
+    "nn_bler": 0.026,
+    "nn_errs": 130,
+    "nn_total": 5000,
+    "sc_bler": 0.0264,
+    "sc_total": 5000,
+    "ratio": 0.985,
+    "ku": 10,
+    "kv": 10,
+    "path_i": 6
+  },
+  "32": {
+    "N": 32,
+    "nn_bler": 0.0272,
+    "nn_errs": 136,
+    "nn_total": 5000,
+    "sc_bler": 0.0252,
+    "sc_total": 5000,
+    "ratio": 1.079,
+    "ku": 20,
+    "kv": 20,
+    "path_i": 12
+  },
+  "64": {
+    "N": 64,
+    "nn_bler": 0.012,
+    "nn_errs": 60,
+    "nn_total": 5000,
+    "sc_bler": 0.0142,
+    "sc_total": 5000,
+    "ratio": 0.845,
+    "ku": 40,
+    "kv": 40,
+    "path_i": 24
+  },
+  "128": {
+    "N": 128,
+    "nn_bler": 0.0044,
+    "nn_errs": 22,
+    "nn_total": 5000,
+    "sc_bler": 0.0036,
+    "sc_total": 5000,
+    "ratio": 1.222,
+    "ku": 79,
+    "kv": 79,
+    "path_i": 48
+  },
+  "256": {
+    "N": 256,
+    "nn_bler": 0.002,
+    "nn_errs": 10,
+    "nn_total": 5000,
+    "sc_bler": 0.0025,
+    "sc_total": 2000,
+    "ratio": 0.8,
+    "ku": 159,
+    "kv": 159,
+    "path_i": 96
+  },
+  "512": {
+    "N": 512,
+    "nn_bler": 0.0014,
+    "nn_errs": 7,
+    "nn_total": 5000,
+    "sc_bler": 0.003,
+    "sc_total": 1000,
+    "ratio": 0.467,
+    "ku": 317,
+    "kv": 317,
+    "path_i": 192
+  },
+  "1024": {
+    "N": 1024,
+    "nn_bler": 0.0002,
+    "nn_errs": 1,
+    "nn_total": 5000,
+    "sc_bler": 0.0,
+    "sc_total": 500,
+    "ratio": -1,
+    "ku": 635,
+    "kv": 635,
+    "path_i": 384
+  }
+}
