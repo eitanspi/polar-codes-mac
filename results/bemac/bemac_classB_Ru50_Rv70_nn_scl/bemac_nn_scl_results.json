@@ -43,5 +43,19 @@
     "nn_sc_vs_sc": 0.333,
     "nn_scl4_vs_sc": 0.333,
     "nn_scl4_vs_nn_sc": 1.0
+  },
+  "256": {
+    "N": 256,
+    "ku": 128,
+    "kv": 179,
+    "sc_ref": 8e-05,
+    "nn_sc_ref": 4e-05,
+    "nn_sc_bler": 0.0,
+    "nn_sc_cw": 1000,
+    "nn_sc_time": 7.6,
+    "nn_scl4_bler": 0.0,
+    "nn_scl4_cw": 200,
+    "nn_scl4_time": 390,
+    "note": "Zero errors — BLER too low for meaningful comparison at N>=256"
   }
 }
