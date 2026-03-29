@@ -1,0 +1,47 @@
+{
+  "32": {
+    "N": 32,
+    "ku": 16,
+    "kv": 22,
+    "sc_ref": 0.008,
+    "nn_sc_ref": 0.0088,
+    "nn_sc_bler": 0.011333333333333334,
+    "nn_sc_time": 1.9,
+    "nn_scl4_bler": 0.007333333333333333,
+    "nn_scl4_cw": 3000,
+    "nn_scl4_time": 186.6,
+    "nn_sc_vs_sc": 1.417,
+    "nn_scl4_vs_sc": 0.917,
+    "nn_scl4_vs_nn_sc": 0.647
+  },
+  "64": {
+    "N": 64,
+    "ku": 32,
+    "kv": 44,
+    "sc_ref": 0.0056,
+    "nn_sc_ref": 0.003,
+    "nn_sc_bler": 0.0026666666666666666,
+    "nn_sc_time": 4.2,
+    "nn_scl4_bler": 0.0006666666666666666,
+    "nn_scl4_cw": 3000,
+    "nn_scl4_time": 360.5,
+    "nn_sc_vs_sc": 0.476,
+    "nn_scl4_vs_sc": 0.119,
+    "nn_scl4_vs_nn_sc": 0.25
+  },
+  "128": {
+    "N": 128,
+    "ku": 64,
+    "kv": 89,
+    "sc_ref": 0.002,
+    "nn_sc_ref": 0.0012,
+    "nn_sc_bler": 0.0006666666666666666,
+    "nn_sc_time": 11.0,
+    "nn_scl4_bler": 0.0006666666666666666,
+    "nn_scl4_cw": 1500,
+    "nn_scl4_time": 418.1,
+    "nn_sc_vs_sc": 0.333,
+    "nn_scl4_vs_sc": 0.333,
+    "nn_scl4_vs_nn_sc": 1.0
+  }
+}
