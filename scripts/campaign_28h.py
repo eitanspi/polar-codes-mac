@@ -17,7 +17,6 @@ import os, sys, time, json, numpy as np
 from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from polar.channels import GaussianMAC, BEMAC, ABNMAC
 from polar.encoder import polar_encode, build_message

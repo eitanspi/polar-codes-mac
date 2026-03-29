@@ -7,6 +7,8 @@ Polar code construction, successive cancellation (SC / SCL) decoding, and a neur
 - **BEMAC**: Binary Erasure MAC, Z = X + Y
 - **ABNMAC**: Additive Binary Noise MAC, Z = (X+Ex, Y+Ey)
 - **GaussianMAC**: Gaussian MAC with BPSK, Z = (1-2X) + (1-2Y) + W
+  - Constructor takes noise variance: `GaussianMAC(sigma2=1.0)`
+  - Or use the class method for SNR in dB: `GaussianMAC.from_snr_db(snr_db)`
 
 ## Decoders
 
@@ -151,5 +153,5 @@ Class B is the most challenging because the interleaved path requires CalcParent
 
 - E. Arikan, "Channel polarization: A method for constructing capacity-achieving codes for symmetric binary-input memoryless channels," *IEEE Trans. Inf. Theory*, vol. 55, no. 7, pp. 3051-3073, Jul. 2009.
 - S. B. Onay, "Successive cancellation decoding of polar codes for the two-user binary-input MAC," *Proc. IEEE ISIT*, pp. 1532-1536, Jul. 2013.
-- Y. Ren, Z. Li, and P. M. Olmos, "Successive cancellation decoding of polar codes for the two-user MAC using computational graphs," *arXiv:2501.xxxxx*, 2025.
+- Y. Ren, Z. Li, and P. M. Olmos, "Successive cancellation decoding of polar codes for the two-user MAC using computational graphs," in preparation, 2025.
 - S. Aharoni, R. Misoczki, and E. Ordentlich, "Neural polar decoders for 5G: An industrial perspective," *IEEE J. Sel. Areas Commun.*, 2024.

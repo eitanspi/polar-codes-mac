@@ -1,7 +1,7 @@
 #!/bin/bash
 # Generate reliable MC designs for Gaussian MAC at SNR=6dB
 # Uses 4 hours total budget — enough for ~50K+ trials at small N, ~1K+ at N=1024
-cd /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git
+cd "$(dirname "$0")/.."
 
 for cls in C A B; do
     echo "=== Class $cls ==="

@@ -1,7 +1,6 @@
 """Generate final Gaussian MAC BLER plots with fixed MC design."""
 import numpy as np, sys, os, time, json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
