@@ -190,6 +190,209 @@ def design_abnmac(n: int, ku: int, kv: int, p_noise=None):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  Gaussian Approximation (GA) density evolution
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _phi_ga(x):
+    """
+    phi(x) for Gaussian Approximation density evolution.
+
+    Approximation from Chung et al. / Vangala et al.:
+      phi(x) ≈ exp(-0.4527*x^0.86 + 0.0218)   for x in (0, 10)
+      phi(x) ≈ sqrt(pi/x) * exp(-x/4)          for x >= 10
+    """
+    x = np.asarray(x, dtype=np.float64)
+    scalar = x.ndim == 0
+    x = np.atleast_1d(x)
+    result = np.ones_like(x)
+
+    mask_small = (x > 0) & (x < 10)
+    mask_large = x >= 10
+
+    result[mask_small] = np.exp(-0.4527 * x[mask_small] ** 0.86 + 0.0218)
+    result[mask_large] = np.sqrt(np.pi / x[mask_large]) * np.exp(-x[mask_large] / 4.0)
+    result = np.clip(result, 0.0, 1.0)
+
+    return float(result) if scalar else result
+
+
+def _phi_inv_ga(y):
+    """Inverse of phi for GA density evolution, using bisection."""
+    y = float(y)
+    if y >= 1.0:
+        return 0.0
+    if y <= 0.0:
+        return 1e8
+
+    if y < 1e-10:
+        x = -4.0 * np.log(y)
+        for _ in range(10):
+            log_phi = 0.5 * np.log(np.pi / x) - x / 4.0
+            target = np.log(y)
+            deriv = -0.5 / x - 0.25
+            x = x - (log_phi - target) / deriv
+            x = max(x, 1.0)
+        return x
+
+    lo, hi = 1e-8, 200.0
+    for _ in range(80):
+        mid = (lo + hi) / 2.0
+        if _phi_ga(mid) > y:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2.0
+
+
+def ga_recursion(mu0: float, n: int) -> np.ndarray:
+    """
+    Gaussian Approximation density evolution for polar codes.
+
+    Tracks the LLR mean mu (assuming LLR ~ N(mu, 2*mu)) through n
+    polarization stages.
+
+    Recursion (Trifonov 2012):
+        mu^- = phi_inv(1 - (1 - phi(mu))^2)
+        mu^+ = 2 * mu
+    """
+    mu = np.array([float(mu0)])
+    for _ in range(n):
+        phi_mu = _phi_ga(mu)
+        p_bad = 1.0 - (1.0 - phi_mu) ** 2
+        p_bad = np.clip(p_bad, 1e-15, 1.0)
+        mu_bad = np.array([_phi_inv_ga(float(p)) for p in p_bad])
+        mu_good = 2.0 * mu
+
+        mu_new = np.empty(2 * len(mu), dtype=np.float64)
+        mu_new[0::2] = mu_bad
+        mu_new[1::2] = mu_good
+        mu = mu_new
+    return mu
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Gaussian MAC design
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _mu0_biawgn(sigma2: float) -> float:
+    """Initial LLR mean for BI-AWGN channel: E[LLR] = 2/sigma2."""
+    return 2.0 / sigma2
+
+
+def _Z0_u_gmac(sigma2: float) -> float:
+    """Bhattacharyya Z₀ for the U-marginal channel of the Gaussian MAC."""
+    sigma = np.sqrt(sigma2)
+    z_max = max(8.0, 4 + 6 * sigma)
+    z = np.linspace(-z_max, z_max, 20001)
+
+    norm = 1.0 / np.sqrt(2.0 * np.pi * sigma2)
+
+    def gauss(zz, mu):
+        return norm * np.exp(-0.5 * (zz - mu) ** 2 / sigma2)
+
+    W1_0 = 0.5 * gauss(z, 2) + 0.5 * gauss(z, 0)
+    W1_1 = 0.5 * gauss(z, 0) + 0.5 * gauss(z, -2)
+
+    integrand = np.sqrt(W1_0 * W1_1)
+    return float(np.trapz(integrand, z))
+
+
+def bhattacharyya_gmac(n: int, sigma2: float = 1.0):
+    """
+    Bhattacharyya parameters for Gaussian MAC with path 0^N 1^N.
+
+    NOTE: Bhattacharyya recursion is loose for Gaussian channels.
+    Use ga_gmac() or design_gmac(method='ga') for tighter designs.
+    """
+    Z0_u = _Z0_u_gmac(sigma2)
+    Z0_v = np.exp(-1.0 / (2.0 * sigma2))
+
+    z_u = bhattacharyya_recursion(float(Z0_u), n)
+    z_v = bhattacharyya_recursion(float(Z0_v), n)
+    return z_u, z_v
+
+
+def _mu0_u_gmac(sigma2: float) -> float:
+    """
+    Initial LLR mean for the U-marginal channel of Gaussian MAC.
+
+    Computed by numerical integration of the mixture LLR.
+    """
+    sigma = np.sqrt(sigma2)
+    z_max = max(8.0, 4 + 6 * sigma)
+    z = np.linspace(-z_max, z_max, 20001)
+
+    norm = 1.0 / np.sqrt(2.0 * np.pi * sigma2)
+
+    def gauss(zz, mu):
+        return norm * np.exp(-0.5 * (zz - mu) ** 2 / sigma2)
+
+    W0 = 0.5 * gauss(z, 2) + 0.5 * gauss(z, 0)
+    W1 = 0.5 * gauss(z, 0) + 0.5 * gauss(z, -2)
+
+    safe = (W0 > 1e-300) & (W1 > 1e-300)
+    llr = np.where(safe, np.log(W0 / np.where(safe, W1, 1.0)), 0.0)
+
+    mu0 = float(np.trapz(W0 * llr, z))
+    return max(1e-10, mu0)
+
+
+def ga_gmac(n: int, sigma2: float = 1.0):
+    """
+    Gaussian Approximation density evolution for Gaussian MAC with path 0^N 1^N.
+
+    Returns pe_u, pe_v : error probability per channel (lower = more reliable).
+    """
+    mu0_u = _mu0_u_gmac(sigma2)
+    mu0_v = _mu0_biawgn(sigma2)
+
+    mu_u = ga_recursion(mu0_u, n)
+    mu_v = ga_recursion(mu0_v, n)
+
+    pe_u = _phi_ga(mu_u)
+    pe_v = _phi_ga(mu_v)
+    return pe_u, pe_v
+
+
+def design_gmac(n: int, ku: int, kv: int, sigma2: float = 1.0,
+                method: str = 'ga'):
+    """
+    Design polar code for Gaussian MAC with path 0^N 1^N.
+
+    Parameters
+    ----------
+    n      : log2(N)
+    ku     : number of U information bits
+    kv     : number of V information bits
+    sigma2 : noise variance σ²
+    method : 'ga' (Gaussian Approximation, recommended) or
+             'bhatt' (Bhattacharyya, loose upper bound)
+
+    Returns
+    -------
+    Au, Av, frozen_u, frozen_v, rel_u, rel_v
+    """
+    N = 1 << n
+
+    if method == 'ga':
+        rel_u, rel_v = ga_gmac(n, sigma2)
+    else:
+        rel_u, rel_v = bhattacharyya_gmac(n, sigma2)
+
+    Au_0idx = sorted(np.argsort(rel_u)[:ku].tolist())
+    Au = [i + 1 for i in Au_0idx]
+
+    Av_0idx = sorted(np.argsort(rel_v)[:kv].tolist())
+    Av = [i + 1 for i in Av_0idx]
+
+    all_pos = set(range(1, N + 1))
+    frozen_u = {pos: 0 for pos in sorted(all_pos - set(Au))}
+    frozen_v = {pos: 0 for pos in sorted(all_pos - set(Av))}
+
+    return Au, Av, frozen_u, frozen_v, rel_u, rel_v
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  Path construction
 # ─────────────────────────────────────────────────────────────────────────────
 

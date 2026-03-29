@@ -30,10 +30,7 @@ from polar.design import make_path
 from polar.design_mc import design_from_file
 from polar.decoder import decode_single, decode_batch
 from polar.decoder_scl import decode_single_list, decode_batch_list
-
-# Import GA design from root-level design.py
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-from design import design_gmac as design_gmac_ga
+from polar.design import design_gmac as design_gmac_ga
 
 
 # ════════════════════════════════════════════════════════════════════

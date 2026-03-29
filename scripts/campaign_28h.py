@@ -24,7 +24,7 @@ from polar.design import design_bemac, design_abnmac, make_path
 from polar.design_mc import load_design, _select_info_frozen
 from polar.decoder import decode_single
 from polar.decoder_scl import decode_single_list
-from design import ga_gmac
+from polar.design import ga_gmac
 
 DESIGNS_DIR = os.path.join(os.path.dirname(__file__), "..", "designs")
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")

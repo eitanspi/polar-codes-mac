@@ -19,7 +19,7 @@ Modules:
 
 from .encoder import polar_encode, build_message
 from .channels import BEMAC, ABNMAC, GaussianMAC
-from .design import design_bemac, make_path
+from .design import design_bemac, design_gmac, ga_gmac, make_path
 from .design_mc import design_bemac_mc
 from .decoder import decode_single, decode_batch
 from .decoder_scl import decode_single_list, decode_batch_list

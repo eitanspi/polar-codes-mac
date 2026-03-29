@@ -504,7 +504,7 @@ def _decode_general_tensor(N, log_W, b, frozen_u, frozen_v):
 def build_log_W_leaf_batch(Z_batch, channel) -> np.ndarray:
     """
     Build (batch, N, 2, 2) leaf log-probability array for a batch of
-    received vectors.  Currently supports BE-MAC only.
+    received vectors.
 
     Parameters
     ----------
@@ -515,12 +515,21 @@ def build_log_W_leaf_batch(Z_batch, channel) -> np.ndarray:
     -------
     log_W : ndarray shape (batch, N, 2, 2), float64
     """
-    Z = np.asarray(Z_batch, dtype=np.int32)
     if channel.name == "be_mac":
+        Z = np.asarray(Z_batch, dtype=np.int32)
         xy_sum = np.array([[0, 1], [1, 2]], dtype=np.int32)
         match = Z[:, :, None, None] == xy_sum[None, None, :, :]
         return np.where(match, 0.0, -np.inf)
+
+    elif channel.name == "gaussian_mac":
+        Z = np.asarray(Z_batch, dtype=np.float64)
+        sigma2 = channel.sigma2
+        log_norm = -0.5 * np.log(2.0 * np.pi * sigma2)
+        mu = np.array([[2.0, 0.0], [0.0, -2.0]], dtype=np.float64)
+        return log_norm - (Z[:, :, None, None] - mu[None, None, :, :]) ** 2 / (2.0 * sigma2)
+
     else:
+        Z = np.asarray(Z_batch)
         return np.stack([build_log_W_leaf(Z[i], channel)
                          for i in range(Z.shape[0])])
 
