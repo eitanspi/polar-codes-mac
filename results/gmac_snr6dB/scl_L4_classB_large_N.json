@@ -1,0 +1,26 @@
+{
+  "description": "SCL L=4 large N baselines, Class B, SNR=6dB",
+  "results": {
+    "512": {
+      "N": 512,
+      "ku": 246,
+      "kv": 246,
+      "L": 4,
+      "bler": 0.0,
+      "block_errors": 0,
+      "n_codewords": 500,
+      "time_s": 67.0
+    },
+    "1024": {
+      "N": 1024,
+      "ku": 492,
+      "kv": 492,
+      "L": 4,
+      "bler": 0.0,
+      "block_errors": 0,
+      "n_codewords": 200,
+      "time_s": 54.9
+    }
+  },
+  "timestamp": "2026-03-29T13:53:26.790711"
+}
