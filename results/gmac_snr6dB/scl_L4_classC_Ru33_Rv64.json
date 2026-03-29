@@ -1,0 +1,56 @@
+{
+  "description": "GMAC 6dB Class C SCL L=4 Ru33_Rv64",
+  "results": {
+    "32": {
+      "N": 32,
+      "ku": 11,
+      "kv": 20,
+      "L": 4,
+      "bler": 0.1698,
+      "block_errors": 849,
+      "n_codewords": 5000,
+      "time_s": 12.7
+    },
+    "64": {
+      "N": 64,
+      "ku": 21,
+      "kv": 41,
+      "L": 4,
+      "bler": 0.063,
+      "block_errors": 315,
+      "n_codewords": 5000,
+      "time_s": 25.6
+    },
+    "128": {
+      "N": 128,
+      "ku": 42,
+      "kv": 82,
+      "L": 4,
+      "bler": 0.03766666666666667,
+      "block_errors": 113,
+      "n_codewords": 3000,
+      "time_s": 333.3
+    },
+    "256": {
+      "N": 256,
+      "ku": 84,
+      "kv": 164,
+      "L": 4,
+      "bler": 0.0445,
+      "block_errors": 89,
+      "n_codewords": 2000,
+      "time_s": 41.1
+    },
+    "512": {
+      "N": 512,
+      "ku": 169,
+      "kv": 328,
+      "L": 4,
+      "bler": 0.056,
+      "block_errors": 28,
+      "n_codewords": 500,
+      "time_s": 23.5
+    }
+  },
+  "timestamp": "2026-03-29T15:10:00.088384"
+}
