@@ -218,3 +218,26 @@
 The codebase is functionally correct. All modules import cleanly, encoders/decoders produce correct results, design files load properly, neural models load and instantiate, and scripts parse and run. The code is clean with no TODOs, no secrets, and no hardcoded paths in Python files.
 
 **Fix items 1-5 before committing.** Items 6-7 are nice-to-have.
+
+---
+
+## 9. Update Log
+
+### 2026-03-29: Neural SCL Results and Documentation Update
+
+**New files added:**
+- `scripts/eval_bemac_nn_scl_large_N.py` — NN-SCL evaluation at N=256,512,1024
+- `scripts/plot_bemac_comprehensive.py` — Comprehensive 4-decoder comparison plot
+- `results/bemac/bemac_classB_Ru50_Rv70_nn_scl/bemac_comprehensive_comparison.{png,pdf,xlsx}`
+- `results/bemac/bemac_classB_Ru50_Rv70_nn_scl/bemac_comprehensive_data.json`
+
+**Files modified:**
+- `results/bemac/bemac_classB_Ru50_Rv70_nn_scl/bemac_nn_scl_results.json` — added N=256 result (zero errors)
+- `docs/gmac_nn_problem_statement.tex` — added Section 3.2 (Neural SCL results), updated Q5 as RESOLVED, updated Summary
+- `docs/gmac_nn_problem_statement.pdf` — recompiled (now 6 pages)
+
+**Key findings:**
+- NN-SCL (L=4) at N=64: BLER=6.7e-4, **8.4x better than SC**, 1.5x better than SCL-32
+- NN-SCL (L=4) at N=128: BLER=6.7e-4, **3x better than SC**, matches SCL-32
+- NN-SCL at N=256: zero errors in 1000 cw (L=1) and 200 cw (L=4) — BLER too low for comparison
+- For N>=256 on BEMAC, all decoders achieve near-zero BLER; the interesting comparison range is N=32-128
