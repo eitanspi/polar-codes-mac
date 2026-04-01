@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""
+train_n256_long.py — Long continued training at N=256.
+
+Load best checkpoint, train with stable cosine LR for 100K iters.
+Saves checkpoint every 5K iters so training can be resumed or replaced
+by a faster implementation.
+"""
+import sys, os, math, time, json
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+from polar.encoder import polar_encode_batch, bit_reversal_perm
+from polar.channels import GaussianMAC
+from polar.design import make_path
+from polar.design_mc import design_from_file
+from neural.ncg_pure_neural import PureNeuralCompGraphDecoder
+
+N = 256; n = 8
+KU = 123; KV = 123
+SNR_DB = 6.0; SIGMA2 = 10**(-SNR_DB/10)
+SC_BLER = 0.005
+
+BATCH = 8
+LR = 5e-5
+TOTAL_ITERS = 100000
+EVAL_EVERY = 5000
+SAVE_EVERY = 5000
+EVAL_CW = 1000
+
+SAVE_DIR = os.path.join(os.path.dirname(__file__), '..', 'saved_models')
+DESIGNS_DIR = os.path.join(os.path.dirname(__file__), '..', 'designs')
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'train_n256_long.log')
+CKPT_LATEST = os.path.join(SAVE_DIR, 'n256_long_latest.pt')
+CKPT_BEST = os.path.join(SAVE_DIR, 'n256_long_best.pt')
+
+
+class SimpleMLP_Gmac(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.d = 16
+        self.z_encoder = torch.nn.Sequential(
+            torch.nn.Linear(1, 32), torch.nn.ELU(), torch.nn.Linear(32, 16))
+        self.tree = PureNeuralCompGraphDecoder(d=16, hidden=64, n_layers=2)
+
+    def count_parameters(self):
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+
+def get_lr(it):
+    warmup = 1000
+    if it < warmup:
+        return LR * it / warmup
+    progress = (it - warmup) / max(1, TOTAL_ITERS - warmup)
+    return LR * (0.01 + 0.99 * 0.5 * (1 + math.cos(math.pi * progress)))
+
+
+def evaluate(model, channel, b, Au, Av, fu, fv, n_cw):
+    model.eval()
+    br = torch.from_numpy(bit_reversal_perm(n)).long()
+    errs = 0; total = 0
+    rng = np.random.default_rng(999)
+    with torch.no_grad():
+        while total < n_cw:
+            actual = min(8, n_cw - total)
+            uf = np.zeros((actual, N), dtype=int); vf = np.zeros((actual, N), dtype=int)
+            for p in Au: uf[:, p-1] = rng.integers(0, 2, actual)
+            for p in Av: vf[:, p-1] = rng.integers(0, 2, actual)
+            xf = polar_encode_batch(uf); yf = polar_encode_batch(vf)
+            zf = torch.from_numpy(channel.sample_batch(xf, yf)).float()
+            root = model.z_encoder(zf.unsqueeze(-1))[:, br]
+            _, _, uh, vh, _ = model.tree(z=None, b=b, frozen_u=fu, frozen_v=fv, root_emb=root)
+            for i in range(actual):
+                e = any(int(uh[p][i].item()) != uf[i, p-1] for p in Au if p in uh) or \
+                    any(int(vh[p][i].item()) != vf[i, p-1] for p in Av if p in vh)
+                if e: errs += 1
+            total += actual
+    model.train()
+    return errs / total
+
+
+def main():
+    channel = GaussianMAC(sigma2=SIGMA2)
+    Au, Av, fu, fv, _, _, _ = design_from_file(
+        os.path.join(DESIGNS_DIR, f'gmac_B_n{n}_snr{SNR_DB:.0f}dB.npz'), n, KU, KV)
+    b = make_path(N, N // 2)
+    br = torch.from_numpy(bit_reversal_perm(n)).long()
+
+    model = SimpleMLP_Gmac()
+
+    # Load best existing checkpoint
+    ckpt = os.path.join(SAVE_DIR, 'ncg_gmac_mlp_N256.pt')
+    if os.path.exists(CKPT_BEST):
+        ckpt = CKPT_BEST  # resume from our own best if available
+    sd = torch.load(ckpt, map_location='cpu', weights_only=False)
+    fixed = {k.replace('z_enc.', 'z_encoder.'): v for k, v in sd.items()}
+    model.load_state_dict(fixed, strict=False)
+    print(f'Loaded: {ckpt}', flush=True)
+    print(f'Params: {model.count_parameters():,}', flush=True)
+
+    init_bler = evaluate(model, channel, b, Au, Av, fu, fv, EVAL_CW)
+    print(f'Initial BLER: {init_bler:.4f} (SC={SC_BLER})', flush=True)
+    print(f'Batch={BATCH}, LR={LR}, Iters={TOTAL_ITERS}', flush=True)
+    print(f'Checkpoints every {SAVE_EVERY} iters', flush=True)
+
+    opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-5)
+    rng = np.random.default_rng(42)
+    t0 = time.time()
+    losses = []
+    best_bler = init_bler
+
+    model.train()
+    for it in range(1, TOTAL_ITERS + 1):
+        lr_now = get_lr(it)
+        for pg in opt.param_groups:
+            pg['lr'] = lr_now
+
+        uf = np.zeros((BATCH, N), dtype=int); vf = np.zeros((BATCH, N), dtype=int)
+        for p in Au: uf[:, p-1] = rng.integers(0, 2, BATCH)
+        for p in Av: vf[:, p-1] = rng.integers(0, 2, BATCH)
+        xf = polar_encode_batch(uf); yf = polar_encode_batch(vf)
+        zf = torch.from_numpy(channel.sample_batch(xf, yf)).float()
+
+        root = model.z_encoder(zf.unsqueeze(-1))[:, br]
+        logits, targets, _, _, _ = model.tree(z=None, b=b, frozen_u=fu, frozen_v=fv,
+            u_true=torch.from_numpy(uf).float(),
+            v_true=torch.from_numpy(vf).float(), root_emb=root)
+
+        if logits:
+            loss = F.cross_entropy(torch.stack(logits).reshape(-1, 4),
+                                   torch.stack(targets).reshape(-1))
+            opt.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step()
+            losses.append(loss.item())
+
+        # Save latest checkpoint
+        if it % SAVE_EVERY == 0:
+            torch.save(model.state_dict(), CKPT_LATEST)
+
+        # Evaluate
+        if it % EVAL_EVERY == 0:
+            elapsed = time.time() - t0
+            avg_loss = np.mean(losses[-500:])
+            bler = evaluate(model, channel, b, Au, Av, fu, fv, EVAL_CW)
+
+            improved = ''
+            if bler < best_bler:
+                best_bler = bler
+                torch.save(model.state_dict(), CKPT_BEST)
+                improved = ' *BEST*'
+
+            ratio = bler / max(SC_BLER, 1e-8)
+            msg = (f'[{it:>6}/{TOTAL_ITERS}] loss={avg_loss:.4f} BLER={bler:.4f} '
+                   f'(best={best_bler:.4f}, SC={SC_BLER}, ratio={ratio:.1f}x) '
+                   f'{elapsed/60:.0f}min lr={lr_now:.1e}{improved}')
+            print(msg, flush=True)
+            with open(LOG_FILE, 'a') as f:
+                f.write(msg + '\n')
+
+    elapsed = time.time() - t0
+    print(f'\nDONE: best={best_bler:.4f} (SC={SC_BLER}), {elapsed/3600:.1f}hr', flush=True)
+
+
+if __name__ == '__main__':
+    main()
