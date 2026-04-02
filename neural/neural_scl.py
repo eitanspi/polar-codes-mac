@@ -22,10 +22,16 @@ import numpy as np
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from encoder import polar_encode_batch, bit_reversal_perm
-from channels import GaussianMAC
-from design import make_path, design_gmac
-from ncg_pure_neural import PureNeuralCompGraphDecoder
+try:
+    from polar.encoder import polar_encode_batch, bit_reversal_perm
+    from polar.channels import GaussianMAC
+    from polar.design import make_path, design_gmac
+    from neural.ncg_pure_neural import PureNeuralCompGraphDecoder
+except ImportError:
+    from encoder import polar_encode_batch, bit_reversal_perm
+    from channels import GaussianMAC
+    from design import make_path, design_gmac
+    from ncg_pure_neural import PureNeuralCompGraphDecoder
 
 
 # ─── SimpleMLP_Gmac (same as train_gmac_48hr.py) ────────────────────────────
