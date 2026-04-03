@@ -1,0 +1,20 @@
+{
+  "32": {
+    "N": 32,
+    "ku": 13,
+    "kv": 13,
+    "nn_bler": 0.688,
+    "memoryless_sc_bler": 0.731,
+    "snr_db": 6.0,
+    "isi_h": 0.3
+  },
+  "64": {
+    "N": 64,
+    "ku": 26,
+    "kv": 26,
+    "nn_bler": 0.466,
+    "memoryless_sc_bler": 0.575,
+    "snr_db": 6.0,
+    "isi_h": 0.3
+  }
+}
