@@ -68,3 +68,22 @@
   Effective ku (after CRC): 54
 
   NN-SCL(L=4) (500 cw)...
+    200/500  BLER=0.0150
+    400/500  BLER=0.0125
+  NN-SCL(L=4): BLER=0.0140  [423s]
+  NN-CA-SCL(L=4) (500 cw)...
+    200/500  BLER=0.0050
+    400/500  BLER=0.0075
+  NN-CA-SCL(L=4): BLER=0.0060  [410s]
+
+  NN-SCL(L=8) (300 cw)...
+    200/300  BLER=0.0300
+  NN-SCL(L=8): BLER=0.0233  [523s]
+  NN-CA-SCL(L=8) (300 cw)...
+    200/300  BLER=0.0000
+  NN-CA-SCL(L=8): BLER=0.0000  [423s]
+
+  NN-SCL(L=16) (200 cw)...
+    200/200  BLER=0.0200
+  NN-SCL(L=16): BLER=0.0200  [462s]
+  NN-CA-SCL(L=16) (200 cw)...

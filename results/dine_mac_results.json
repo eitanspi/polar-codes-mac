@@ -1,0 +1,6 @@
+{
+  "N": 32,
+  "snr_dB": 6.0,
+  "dine_bler": 1.0,
+  "note": "z_encoder learned without knowing channel formula"
+}
