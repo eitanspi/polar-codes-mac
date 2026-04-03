@@ -1,0 +1,27 @@
+{
+  "model": "LevelEncodedGmacDecoder",
+  "d": 16,
+  "hidden": 64,
+  "N128": {
+    "history": [
+      {
+        "iter": 5000,
+        "loss": 0.01685755394026637,
+        "bler": 0.04,
+        "best_bler": 0.037,
+        "lr": 9.99439332895589e-05,
+        "time_min": 55.71185478369395
+      }
+    ],
+    "N": 128,
+    "ku": 62,
+    "kv": 62,
+    "best_bler": 0.037,
+    "sc_bler": 0.016,
+    "ratio": 2.3125,
+    "params": 39300,
+    "final_bler": 0.0375,
+    "iters_completed": 9575,
+    "time_min": 120.62041785319646
+  }
+}

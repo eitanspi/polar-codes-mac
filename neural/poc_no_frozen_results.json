@@ -1,0 +1,25 @@
+{
+  "N": 128,
+  "ku": 62,
+  "kv": 62,
+  "d": 16,
+  "hidden": 64,
+  "sc_bler": 0.016,
+  "nn_best_bler": 0.019,
+  "init_bler": 0.02,
+  "best_bler": 0.02,
+  "final_bler": 0.0215,
+  "total_iters": 9422,
+  "total_hours": 1.568163528309928,
+  "mode": "no_frozen_training",
+  "history": [
+    {
+      "iter": 5000,
+      "loss": 0.38777602010965345,
+      "bler": 0.03333333333333333,
+      "best_bler": 0.02,
+      "lr": 7.995514663164712e-05,
+      "time_min": 47.761320467789965
+    }
+  ]
+}

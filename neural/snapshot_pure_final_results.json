@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-03-31T15:54:26.673725",
+  "config": {
+    "snr_dB": 6.0,
+    "sigma2": 0.251188643150958,
+    "class": "B",
+    "d_emb": 32,
+    "d_hidden": 128,
+    "total_params": 104580
+  },
+  "results": {
+    "32": {
+      "N": 32,
+      "ku": 15,
+      "kv": 15,
+      "nn_bler": 0.0444,
+      "sc_bler": 0.039,
+      "ratio": 1.1384615384615384,
+      "nn_errors": 222,
+      "sc_errors": 195,
+      "n_codewords": 5000,
+      "sc_ref": 0.046,
+      "nn_time_s": 94.6,
+      "sc_time_s": 1.0
+    },
+    "64": {
+      "N": 64,
+      "ku": 31,
+      "kv": 31,
+      "nn_bler": 0.0322,
+      "sc_bler": 0.026,
+      "ratio": 1.2384615384615385,
+      "nn_errors": 161,
+      "sc_errors": 130,
+      "n_codewords": 5000,
+      "sc_ref": 0.025,
+      "nn_time_s": 199.2,
+      "sc_time_s": 1.8
+    },
+    "128": {
+      "N": 128,
+      "ku": 62,
+      "kv": 62,
+      "nn_bler": 0.033,
+      "sc_bler": 0.016,
+      "ratio": 2.0625,
+      "nn_errors": 165,
+      "sc_errors": 80,
+      "n_codewords": 5000,
+      "sc_ref": 0.016,
+      "nn_time_s": 404.2,
+      "sc_time_s": 3.8
+    },
+    "256": {
+      "N": 256,
+      "ku": 123,
+      "kv": 123,
+      "nn_bler": 0.0446,
+      "sc_bler": 0.005,
+      "ratio": 8.92,
+      "nn_errors": 223,
+      "sc_errors": 25,
+      "n_codewords": 5000,
+      "sc_ref": 0.005,
+      "nn_time_s": 831.3,
+      "sc_time_s": 7.7
+    },
+    "512": {
+      "N": 512,
+      "ku": 246,
+      "kv": 246,
+      "nn_bler": 0.1268,
+      "sc_bler": 0.0006,
+      "ratio": 211.33333333333334,
+      "nn_errors": 634,
+      "sc_errors": 3,
+      "n_codewords": 5000,
+      "sc_ref": 0.001,
+      "nn_time_s": 1760.7,
+      "sc_time_s": 16.0
+    },
+    "1024": {
+      "N": 1024,
+      "ku": 492,
+      "kv": 492,
+      "nn_bler": 0.4215,
+      "sc_bler": 0.0015,
+      "ratio": 281.0,
+      "nn_errors": 843,
+      "sc_errors": 3,
+      "n_codewords": 2000,
+      "sc_ref": 0.001,
+      "nn_time_s": 2691.1,
+      "sc_time_s": 19.6
+    }
+  },
+  "total_time_min": 104.0
+}

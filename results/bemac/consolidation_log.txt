@@ -1,0 +1,180 @@
+
+================================================================================
+  PHASE 1: Class B — consolidating existing results
+================================================================================
+
+  Running SCL(L=4) for Class B N=16 (3000 cw)...
+    SCL(L=4): 500/3000  BLER=0.0140
+    SCL(L=4): 1000/3000  BLER=0.0100
+    SCL(L=4): 1500/3000  BLER=0.0100
+    SCL(L=4): 2000/3000  BLER=0.0080
+    SCL(L=4): 2500/3000  BLER=0.0096
+    SCL(L=4): 3000/3000  BLER=0.0100
+  SCL(L=4) N=16: BLER=0.01000  [13.4s]
+
+  Running SCL(L=4) for Class B N=32 (3000 cw)...
+    SCL(L=4): 500/3000  BLER=0.0040
+    SCL(L=4): 1000/3000  BLER=0.0040
+    SCL(L=4): 1500/3000  BLER=0.0027
+    SCL(L=4): 2000/3000  BLER=0.0035
+    SCL(L=4): 2500/3000  BLER=0.0040
+    SCL(L=4): 3000/3000  BLER=0.0037
+  SCL(L=4) N=32: BLER=0.00367  [28.1s]
+
+  Running SCL(L=4) for Class B N=64 (3000 cw)...
+    SCL(L=4): 500/3000  BLER=0.0000
+    SCL(L=4): 1000/3000  BLER=0.0000
+    SCL(L=4): 1500/3000  BLER=0.0013
+    SCL(L=4): 2000/3000  BLER=0.0010
+    SCL(L=4): 2500/3000  BLER=0.0008
+    SCL(L=4): 3000/3000  BLER=0.0010
+  SCL(L=4) N=64: BLER=0.00100  [64.3s]
+
+  Running SCL(L=4) for Class B N=128 (3000 cw)...
+    SCL(L=4): 500/3000  BLER=0.0000
+    SCL(L=4): 1000/3000  BLER=0.0000
+    SCL(L=4): 1500/3000  BLER=0.0007
+    SCL(L=4): 2000/3000  BLER=0.0010
+    SCL(L=4): 2500/3000  BLER=0.0016
+    SCL(L=4): 3000/3000  BLER=0.0017
+  SCL(L=4) N=128: BLER=0.00167  [135.3s]
+
+  Running SCL(L=4) for Class B N=256 (2000 cw)...
+    SCL(L=4): 500/2000  BLER=0.0000
+    SCL(L=4): 1000/2000  BLER=0.0000
+    SCL(L=4): 1500/2000  BLER=0.0000
+    SCL(L=4): 2000/2000  BLER=0.0000
+  SCL(L=4) N=256: BLER=0.00000  [195.5s]
+
+================================================================================
+  PHASE 2: Class C — running evaluations
+================================================================================
+
+  SC Class C N=32 (5000 cw)...
+/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/polar/decoder.py:116: RuntimeWarning: invalid value encountered in scalar subtract
+  result = np.logaddexp(La + Lb, 0.0) - np.logaddexp(La, Lb)
+/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/polar/decoder.py:116: RuntimeWarning: invalid value encountered in scalar add
+  result = np.logaddexp(La + Lb, 0.0) - np.logaddexp(La, Lb)
+/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/polar/decoder.py:134: RuntimeWarning: invalid value encountered in scalar add
+  result = Lb + (1.0 - 2.0 * u) * La
+/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/polar/decoder.py:167: RuntimeWarning: invalid value encountered in subtract
+  return log_W_leaf[idx, x, 0] - log_W_leaf[idx, x, 1]
+    SC: 1000/5000  BLER=0.5710
+    SC: 2000/5000  BLER=0.5595
+    SC: 3000/5000  BLER=0.5620
+    SC: 4000/5000  BLER=0.5583
+    SC: 5000/5000  BLER=0.5642
+  SC N=32: BLER=0.56420  [11.3s]
+  NN-SC Class C N=32 (5000 cw)...
+    NN-SC: 1000/5000  BLER=0.6910
+    NN-SC: 2000/5000  BLER=0.6860
+    NN-SC: 3000/5000  BLER=0.6830
+    NN-SC: 4000/5000  BLER=0.6807
+    NN-SC: 5000/5000  BLER=0.6846
+  NN-SC N=32: BLER=0.68460  [6.8s]
+  SCL(L=4) Class C N=32 (2000 cw)...
+    SCL(L=4): 500/2000  BLER=0.5160
+    SCL(L=4): 1000/2000  BLER=0.5130
+    SCL(L=4): 1500/2000  BLER=0.5007
+    SCL(L=4): 2000/2000  BLER=0.4945
+  SCL(L=4) N=32: BLER=0.49450  [7.9s]
+
+  SC Class C N=64 (5000 cw)...
+    SC: 1000/5000  BLER=0.6970
+    SC: 2000/5000  BLER=0.7115
+    SC: 3000/5000  BLER=0.7217
+    SC: 4000/5000  BLER=0.7242
+    SC: 5000/5000  BLER=0.7268
+  SC N=64: BLER=0.72680  [25.8s]
+  NN-SC Class C N=64 (5000 cw)...
+    NN-SC: 1000/5000  BLER=0.9190
+    NN-SC: 2000/5000  BLER=0.9195
+    NN-SC: 3000/5000  BLER=0.9203
+    NN-SC: 4000/5000  BLER=0.9240
+    NN-SC: 5000/5000  BLER=0.9250
+  NN-SC N=64: BLER=0.92500  [20.9s]
+  SCL(L=4) Class C N=64 (2000 cw)...
+    SCL(L=4): 500/2000  BLER=0.5820
+    SCL(L=4): 1000/2000  BLER=0.5790
+    SCL(L=4): 1500/2000  BLER=0.5820
+    SCL(L=4): 2000/2000  BLER=0.5875
+  SCL(L=4) N=64: BLER=0.58750  [16.6s]
+
+  SC Class C N=128 (5000 cw)...
+    SC: 1000/5000  BLER=0.8440
+    SC: 2000/5000  BLER=0.8590
+    SC: 3000/5000  BLER=0.8557
+    SC: 4000/5000  BLER=0.8565
+    SC: 5000/5000  BLER=0.8550
+  SC N=128: BLER=0.85500  [60.0s]
+  NN-SC Class C N=128 (5000 cw)...
+    NN-SC: 1000/5000  BLER=0.9980
+    NN-SC: 2000/5000  BLER=0.9975
+    NN-SC: 3000/5000  BLER=0.9977
+    NN-SC: 4000/5000  BLER=0.9962
+    NN-SC: 5000/5000  BLER=0.9966
+  NN-SC N=128: BLER=0.99660  [40.0s]
+  SCL(L=4) Class C N=128 (2000 cw)...
+    SCL(L=4): 500/2000  BLER=0.7560
+    SCL(L=4): 1000/2000  BLER=0.7450
+    SCL(L=4): 1500/2000  BLER=0.7533
+    SCL(L=4): 2000/2000  BLER=0.7550
+  SCL(L=4) N=128: BLER=0.75500  [28.8s]
+
+  SC Class C N=256 (5000 cw)...
+    SC: 1000/5000  BLER=0.9420
+    SC: 2000/5000  BLER=0.9440
+    SC: 3000/5000  BLER=0.9460
+    SC: 4000/5000  BLER=0.9473
+    SC: 5000/5000  BLER=0.9478
+  SC N=256: BLER=0.94780  [125.4s]
+  NN-SC Class C N=256 (5000 cw)...
+    NN-SC: 1000/5000  BLER=0.9990
+    NN-SC: 2000/5000  BLER=0.9995
+    NN-SC: 3000/5000  BLER=0.9990
+    NN-SC: 4000/5000  BLER=0.9992
+    NN-SC: 5000/5000  BLER=0.9992
+  NN-SC N=256: BLER=0.99920  [127.0s]
+
+  SC Class C N=512 (2000 cw)...
+    SC: 1000/2000  BLER=0.9900
+    SC: 2000/2000  BLER=0.9905
+  SC N=512: BLER=0.99050  [123.3s]
+  NN-SC Class C N=512 (2000 cw)...
+    NN-SC: 2000/2000  BLER=1.0000
+  NN-SC N=512: BLER=1.00000  [258.9s]
+
+  SC Class C N=1024 (2000 cw)...
+    SC: 1000/2000  BLER=1.0000
+    SC: 2000/2000  BLER=0.9995
+  SC N=1024: BLER=0.99950  [279.4s]
+  NN-SC Class C N=1024 (2000 cw)...
+    NN-SC: 2000/2000  BLER=1.0000
+  NN-SC N=1024: BLER=1.00000  [508.0s]
+
+================================================================================
+  BEMAC Class_B
+================================================================================
+      N     Ru     Rv          SC      SCL(4)       NN-SC   NN/SC
+  ------------------------------------------------------------
+     16  0.500  0.688      0.0106        0.01      0.0114    1.08
+     32  0.500  0.688       0.008  0.0036666666666666666      0.0088    1.10
+     64  0.500  0.703      0.0056       0.001       0.003    0.54
+    128  0.500  0.703       0.002  0.0016666666666666668      0.0012    0.60
+    256  0.500  0.699       8e-05         0.0       4e-05    0.50
+    512  0.500  0.699         0.0           -         0.0       -
+   1024  0.500  0.699      0.0001           -      0.0001    1.00
+
+================================================================================
+  BEMAC Class_C
+================================================================================
+      N     Ru     Rv          SC      SCL(4)       NN-SC   NN/SC
+  ------------------------------------------------------------
+     32  0.500  1.000      0.5642      0.4945      0.6846    1.21
+     64  0.500  1.000      0.7268      0.5875       0.925    1.27
+    128  0.500  1.000       0.855       0.755      0.9966    1.17
+    256  0.500  1.000      0.9478           -      0.9992    1.05
+    512  0.500  1.000      0.9905           -         1.0    1.01
+   1024  0.500  1.000      0.9995           -         1.0    1.00
+
+  Results saved to: results/bemac/bemac_comprehensive_paper.json

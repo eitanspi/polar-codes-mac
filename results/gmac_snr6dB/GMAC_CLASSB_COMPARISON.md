@@ -11,7 +11,7 @@ Updated: 2026-04-02
 | 32 | 0.046 | 0.026 | 0.026 | **0.046** | 0.022 | d=16 curriculum |
 | 64 | 0.025 | 0.013 | 0.012 | **0.026** | 0.013 | d=16 48hr training |
 | 128 | 0.016 | 0.008 | 0.006 | **0.017** | 0.015 | Freeze & extend |
-| 256 | 0.005 | 0.0005 | -- | **0.015** | 0.026 | Scheduled sampling 50K iters |
+| 256 | 0.005 | 0.0005 | -- | **0.009** | 0.026 | Campaign round 3, sched sampling |
 | 512 | 0.001 | 0.000 | -- | **0.018** | 0.045 | Regular training 45K iters |
 | 1024 | 0.001 | 0.000 | -- | 0.069 | 0.045 | Curriculum (under-trained) |
 
@@ -22,7 +22,7 @@ Updated: 2026-04-02
 | 32 | 0.046 | 0.046 | 1.0x | 15K iters curriculum | 3000 |
 | 64 | 0.026 | 0.025 | 1.03x | 80K iters, 12hr | 3000 |
 | 128 | 0.017 | 0.016 | 1.04x | Freeze & extend 30K iters | 3000 |
-| 256 | 0.015 | 0.005 | 3.0x | Scheduled sampling 50K iters | 5000 |
+| 256 | 0.009 | 0.005 | 1.8x | Campaign round 3, sched sampling | 500 |
 | 512 | 0.018 | 0.001 | 18x | Regular training 45K iters (1000cw) | 1000 |
 
 ### Key observations
