@@ -1,0 +1,272 @@
+{
+  "model_size": {
+    "bemac_d16": {
+      "params": 38500,
+      "memory_KB": 150.4
+    },
+    "gmac_d16": {
+      "params": 39044,
+      "memory_KB": 152.5
+    },
+    "gmac_d32": {
+      "params": 153348
+    }
+  },
+  "tree_operations": {
+    "N32_ClassB": {
+      "N": 32,
+      "path": "Class B",
+      "calc_left": 61,
+      "calc_right": 61,
+      "calc_parent": 54,
+      "total": 176
+    },
+    "N32_ClassC": {
+      "N": 32,
+      "path": "Class C",
+      "calc_left": 62,
+      "calc_right": 62,
+      "calc_parent": 56,
+      "total": 180
+    },
+    "N64_ClassB": {
+      "N": 64,
+      "path": "Class B",
+      "calc_left": 125,
+      "calc_right": 125,
+      "calc_parent": 117,
+      "total": 367
+    },
+    "N64_ClassC": {
+      "N": 64,
+      "path": "Class C",
+      "calc_left": 126,
+      "calc_right": 126,
+      "calc_parent": 119,
+      "total": 371
+    },
+    "N128_ClassB": {
+      "N": 128,
+      "path": "Class B",
+      "calc_left": 253,
+      "calc_right": 253,
+      "calc_parent": 244,
+      "total": 750
+    },
+    "N128_ClassC": {
+      "N": 128,
+      "path": "Class C",
+      "calc_left": 254,
+      "calc_right": 254,
+      "calc_parent": 246,
+      "total": 754
+    },
+    "N256_ClassB": {
+      "N": 256,
+      "path": "Class B",
+      "calc_left": 509,
+      "calc_right": 509,
+      "calc_parent": 499,
+      "total": 1517
+    },
+    "N256_ClassC": {
+      "N": 256,
+      "path": "Class C",
+      "calc_left": 510,
+      "calc_right": 510,
+      "calc_parent": 501,
+      "total": 1521
+    },
+    "N512_ClassB": {
+      "N": 512,
+      "path": "Class B",
+      "calc_left": 1021,
+      "calc_right": 1021,
+      "calc_parent": 1010,
+      "total": 3052
+    },
+    "N512_ClassC": {
+      "N": 512,
+      "path": "Class C",
+      "calc_left": 1022,
+      "calc_right": 1022,
+      "calc_parent": 1012,
+      "total": 3056
+    },
+    "N1024_ClassB": {
+      "N": 1024,
+      "path": "Class B",
+      "calc_left": 2045,
+      "calc_right": 2045,
+      "calc_parent": 2033,
+      "total": 6123
+    },
+    "N1024_ClassC": {
+      "N": 1024,
+      "path": "Class C",
+      "calc_left": 2046,
+      "calc_right": 2046,
+      "calc_parent": 2035,
+      "total": 6127
+    }
+  },
+  "flops": {
+    "32": {
+      "sc_flops": 12260,
+      "nn_flops": 4508672,
+      "ratio": 367.8,
+      "nn_total_mlp_calls": 304
+    },
+    "64": {
+      "sc_flops": 25732,
+      "nn_flops": 9304576,
+      "ratio": 361.6,
+      "nn_total_mlp_calls": 623
+    },
+    "128": {
+      "sc_flops": 52772,
+      "nn_flops": 18917376,
+      "ratio": 358.5,
+      "nn_total_mlp_calls": 1262
+    },
+    "256": {
+      "sc_flops": 106948,
+      "nn_flops": 38163968,
+      "ratio": 356.8,
+      "nn_total_mlp_calls": 2541
+    },
+    "512": {
+      "sc_flops": 215396,
+      "nn_flops": 76678144,
+      "ratio": 356.0,
+      "nn_total_mlp_calls": 5100
+    },
+    "1024": {
+      "sc_flops": 432388,
+      "nn_flops": 153727488,
+      "ratio": 355.5,
+      "nn_total_mlp_calls": 10219
+    }
+  },
+  "inference_time": {
+    "32": {
+      "SC": {
+        "mean_ms": 0.35524531063856557,
+        "std_ms": 2.48708174393796,
+        "median_ms": 0.10479197953827679
+      },
+      "SCL_L4": {
+        "mean_ms": 8.949820848647505,
+        "std_ms": 0.6221812546396445,
+        "median_ms": 8.698791498318315
+      },
+      "NN_SC": {
+        "mean_ms": 20.216403750528116,
+        "std_ms": 1.9718021720412198,
+        "median_ms": 19.88129148958251
+      }
+    },
+    "64": {
+      "SC": {
+        "mean_ms": 0.2211408771108836,
+        "std_ms": 0.07711634559202554,
+        "median_ms": 0.19654149946291
+      },
+      "SCL_L4": {
+        "mean_ms": 19.441581203136593,
+        "std_ms": 2.0606591099473657,
+        "median_ms": 19.195208020391874
+      },
+      "NN_SC": {
+        "mean_ms": 42.80115587869659,
+        "std_ms": 3.5644156818196016,
+        "median_ms": 42.627333488781005
+      }
+    },
+    "128": {
+      "SC": {
+        "mean_ms": 0.5227799201384187,
+        "std_ms": 0.08779913847442516,
+        "median_ms": 0.48600000445730984
+      },
+      "SCL_L4": {
+        "mean_ms": 42.55238339828793,
+        "std_ms": 2.302615031672758,
+        "median_ms": 42.292646001442336
+      },
+      "NN_SC": {
+        "mean_ms": 90.35279503790662,
+        "std_ms": 5.62007748744715,
+        "median_ms": 89.33591700042598
+      }
+    },
+    "256": {
+      "SC": {
+        "mean_ms": 1.0166388334861647,
+        "std_ms": 0.1365008629056745,
+        "median_ms": 0.9596460004104301
+      },
+      "SCL_L4": {
+        "mean_ms": 86.06343058636412,
+        "std_ms": 3.0263674813439074,
+        "median_ms": 85.89831249264535
+      },
+      "NN_SC": {
+        "mean_ms": 185.3265799145447,
+        "std_ms": 11.138848002647526,
+        "median_ms": 180.34435399749782
+      }
+    },
+    "512": {
+      "SC": {
+        "mean_ms": 2.3777332942700014,
+        "std_ms": 0.3261151888033599,
+        "median_ms": 2.35239599714987
+      },
+      "NN_SC": {
+        "mean_ms": 362.484516800032,
+        "std_ms": 7.986088321921535,
+        "median_ms": 362.80460449052043
+      }
+    },
+    "1024": {
+      "SC": {
+        "mean_ms": 5.113383405841887,
+        "std_ms": 0.33807524359449603,
+        "median_ms": 5.074625005363487
+      },
+      "NN_SC": {
+        "mean_ms": 749.4430291000754,
+        "std_ms": 43.682239402004825,
+        "median_ms": 730.0224165082909
+      }
+    }
+  },
+  "training_time": {
+    "32": {
+      "iters": 15000,
+      "wall_time_hr": 0.33,
+      "best_bler": 0.046
+    },
+    "64": {
+      "iters": 80000,
+      "wall_time_hr": 12,
+      "best_bler": 0.026
+    },
+    "128": {
+      "iters": 135000,
+      "wall_time_hr": 28,
+      "best_bler": 0.017
+    },
+    "256": {
+      "iters": 100000,
+      "wall_time_hr": 16,
+      "best_bler": 0.015
+    },
+    "512": {
+      "iters": 45000,
+      "wall_time_hr": 28,
+      "best_bler": 0.012
+    }
+  }
+}
