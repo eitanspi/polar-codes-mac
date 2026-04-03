@@ -87,3 +87,31 @@
     200/200  BLER=0.0200
   NN-SCL(L=16): BLER=0.0200  [462s]
   NN-CA-SCL(L=16) (200 cw)...
+    200/200  BLER=0.0000
+  NN-CA-SCL(L=16): BLER=0.0000  [472s]
+
+  Results saved to: /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/gmac_snr6dB/crc_aided_nn_scl.json
+
+================================================================================
+  Summary: CRC-Aided NN-SCL
+================================================================================
+
+  N=32, ku=15, kv=15:
+    NN_SCL_L4             BLER=0.0230
+    NN_CA_SCL_L4          BLER=0.0090
+
+  N=64, ku=31, kv=31:
+    NN_SCL_L4             BLER=0.0170
+    NN_CA_SCL_L4          BLER=0.0020
+    NN_SCL_L8             BLER=0.0080
+    NN_CA_SCL_L8          BLER=0.0020
+    NN_SCL_L16            BLER=0.0200
+    NN_CA_SCL_L16         BLER=0.0033
+
+  N=128, ku=62, kv=62:
+    NN_SCL_L4             BLER=0.0140
+    NN_CA_SCL_L4          BLER=0.0060
+    NN_SCL_L8             BLER=0.0233
+    NN_CA_SCL_L8          BLER=0.0000
+    NN_SCL_L16            BLER=0.0200
+    NN_CA_SCL_L16         BLER=0.0000
