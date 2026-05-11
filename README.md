@@ -26,21 +26,36 @@ This work began as an attempt to use NPD for **memoryless** MAC channels (GMAC, 
 
 The pivot is the observation that memory MAC channels are precisely the regime where NPD has a structural advantage: there is no efficient analytical SC for AR(1) noise, and for ISI the joint-trellis SC requires expensive forward-backward on a state lattice. A neural decoder learns the effective per-position channel and bypasses both costs.
 
-## Repository layout
+## Repository layout (the entire top level you need to know)
 
 ```
-polar/                      ← analytical polar primitives (encoder, channels, decoders)
-neural/                     ← NPD modules (npd_memory_mac is the chained-NPD for memory MAC)
-designs/                    ← frozen-set design files (.npz / .json)
-scripts/                    ← runnable analytical / utility scripts (kept lean)
-class_c_npd/results/        ← canonical campaign result JSONs (one subdir per campaign)
-results_local/              ← local plots + PDF summary of the results above
-archive/                    ← old/exploratory files preserved but separated:
-    archive/neural_exploratory/   POC / experiment scripts predating the chained-NPD pivot
-    archive/scripts_exploratory/  Older one-off scripts (GMAC-256 era investigations)
+README.md                  ← you are here
+RESULTS.md                 ← consolidated comparison table with statistical notes
+results_local/summary.pdf  ← 6-page printable summary: math + table + plot for each channel
+results_local/             ← all plots (PNG/PDF), local-cache of cluster result JSONs
+polar/                     ← analytical polar primitives (encoder, channels, decoders)
+neural/                    ← NPD modules (npd_memory_mac.py is the chained NPD)
+designs/                   ← frozen-set design files (.npz / .json)
+class_c_npd/results/<n>/   ← canonical campaign results JSONs (one subdir per campaign)
+scripts/                   ← runnable scripts:
+    scripts/                local utility / canonical reproduction scripts
+    scripts/plotting/       summary-PDF & plot generators
+    scripts/local_analysis/ local CPU analytical-baseline runs (e.g. maagn_sc_local.py)
+archive/                   ← preserved-but-separated old material:
+    archive/neural_exploratory/   POC / experiment scripts predating the pivot
+    archive/scripts_exploratory/  Older one-off scripts (GMAC-256 era)
     archive/results_old/          Old experiment subdirs and checkpoints
     archive/docs_stale/           Older session handoffs / agent prompts
+    archive/toplevel_old/         Old top-level files (debug_sct*, etc.)
 ```
+
+## Read me first
+
+1. Open `results_local/summary.pdf` for the headline (3 pages per channel: math, table, plot).
+2. Look at `RESULTS.md` for the full numerical comparison.
+3. The two key code modules are `polar/decoder_trellis.py` (analytical SCT) and
+   `neural/npd_memory_mac.py` (chained NPD). Channel models are in `polar/channels_memory.py`
+   (ISI) and `polar/channels_memory_new.py` (MA-AGN).
 
 ## Channels (in `polar/`)
 
