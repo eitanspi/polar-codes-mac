@@ -1,0 +1,41 @@
+{
+  "channel": "isi_mac",
+  "channel_meta": {
+    "h": 0.3,
+    "snr_db": 6.0
+  },
+  "N": 128,
+  "ku": 30,
+  "kv": 58,
+  "encoder": "bigru",
+  "gru_layers": 1,
+  "d": 64,
+  "hidden": 128,
+  "n_layers": 2,
+  "stage1_iters": 100000,
+  "stage2_iters": 40000,
+  "batch": 8,
+  "lr": 0.0005,
+  "stage1_best_bler": 0.07,
+  "stage2_best_bler_true_x": 0.0,
+  "chained": {
+    "n_cw": 2000.0,
+    "errs_u": 196.0,
+    "errs_v": 186.0,
+    "errs_total": 196.0,
+    "bler_u": 0.098,
+    "bler_v": 0.093,
+    "bler_total": 0.098
+  },
+  "chained_wilson_95ci": [
+    0.08572999582397371,
+    0.11181136672683871
+  ],
+  "stage1_time_min": 155.74397491614025,
+  "stage2_time_min": 59.29371829827627,
+  "s1_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/isi_mac_bigru_L1_s1_N128_best.pt",
+  "s2_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/isi_mac_bigru_L1_s2_N128_best.pt",
+  "n_params": 228674,
+  "warm_start": false,
+  "pre_training_s1_bler": 1.0
+}

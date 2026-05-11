@@ -1,0 +1,29 @@
+{
+  "ncg_gmac_mlp_N256": {
+    "bler": 0.05,
+    "bler_count": 5,
+    "n_cw": 100,
+    "time_s": 15.230061054229736,
+    "d": 16,
+    "hidden": 64,
+    "params": 39044
+  },
+  "campaign_n256_sched_best": {
+    "bler": 0.02,
+    "bler_count": 2,
+    "n_cw": 100,
+    "time_s": 15.535116195678711,
+    "d": 16,
+    "hidden": 64,
+    "params": 39044
+  },
+  "n256_long_best": {
+    "bler": 0.01,
+    "bler_count": 1,
+    "n_cw": 100,
+    "time_s": 15.537382125854492,
+    "d": 16,
+    "hidden": 64,
+    "params": 39044
+  }
+}

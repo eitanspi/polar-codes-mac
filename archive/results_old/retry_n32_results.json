@@ -1,0 +1,18 @@
+{
+  "N": 32,
+  "sc_bler": 0.0684,
+  "target_1_5x": 0.103,
+  "stage1_bler": 0.108,
+  "stage1_time_min": 19.360134383042652,
+  "stage2_bler": 0.0,
+  "stage2_time_min": 3.7341331958770754,
+  "chained_bler": 0.1248,
+  "chained_ci_low": 0.11592626934849748,
+  "chained_ci_high": 0.13424983534674306,
+  "chained_errs_u": 623,
+  "chained_errs_v": 603,
+  "ratio_to_sc": 1.8245614035087718,
+  "pass_1_5x": false,
+  "total_time_min": 23.15419266621272,
+  "s1_iters": 80000
+}

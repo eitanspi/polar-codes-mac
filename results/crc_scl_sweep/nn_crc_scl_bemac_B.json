@@ -1,0 +1,47 @@
+{
+  "32": {
+    "N": 32,
+    "ku": 16,
+    "kv": 22,
+    "channel": "bemac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.006,
+    "nn_scl_l4_errs": 9,
+    "nn_scl_l4_cw": 1500,
+    "nn_scl_l4_time": 58.3,
+    "nn_crc_scl_l4_bler": 0.0,
+    "nn_crc_scl_l4_errs": 0,
+    "nn_crc_scl_l4_cw": 1500,
+    "nn_crc_scl_l4_time": 57.9
+  },
+  "64": {
+    "N": 64,
+    "ku": 32,
+    "kv": 44,
+    "channel": "bemac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.0,
+    "nn_scl_l4_errs": 0,
+    "nn_scl_l4_cw": 1000,
+    "nn_scl_l4_time": 95.9,
+    "nn_crc_scl_l4_bler": 0.0,
+    "nn_crc_scl_l4_errs": 0,
+    "nn_crc_scl_l4_cw": 1000,
+    "nn_crc_scl_l4_time": 95.9
+  },
+  "128": {
+    "N": 128,
+    "ku": 64,
+    "kv": 89,
+    "channel": "bemac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.0,
+    "nn_scl_l4_errs": 0,
+    "nn_scl_l4_cw": 500,
+    "nn_scl_l4_time": 137.4,
+    "nn_crc_scl_l4_bler": 0.0,
+    "nn_crc_scl_l4_errs": 0,
+    "nn_crc_scl_l4_cw": 500,
+    "nn_crc_scl_l4_time": 136.8
+  }
+}

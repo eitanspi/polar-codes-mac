@@ -1,0 +1,25 @@
+{
+  "N": 256,
+  "ku": 123,
+  "kv": 123,
+  "n_cw": 2000,
+  "models": [
+    "campaign_n256_sched_best.pt",
+    "campaign_n256_sched_latest.pt",
+    "n256_long_best.pt",
+    "n256_long_latest.pt",
+    "ncg_gmac_mlp_N256.pt"
+  ],
+  "fallback": "campaign_n256_sched_best.pt",
+  "per_model_bler": {
+    "campaign_n256_sched_best.pt": 0.0185,
+    "campaign_n256_sched_latest.pt": 0.0185,
+    "n256_long_best.pt": 0.0185,
+    "n256_long_latest.pt": 0.0175,
+    "ncg_gmac_mlp_N256.pt": 0.026
+  },
+  "ensemble_bler": 0.0145,
+  "oracle_bler": 0.014,
+  "no_crc_pass_fraction": 0.013,
+  "time_s": 115.0
+}

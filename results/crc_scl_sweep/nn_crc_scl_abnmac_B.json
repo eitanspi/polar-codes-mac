@@ -1,0 +1,32 @@
+{
+  "32": {
+    "N": 32,
+    "ku": 10,
+    "kv": 10,
+    "channel": "abnmac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.028666666666666667,
+    "nn_scl_l4_errs": 43,
+    "nn_scl_l4_cw": 1500,
+    "nn_scl_l4_time": 44.9,
+    "nn_crc_scl_l4_bler": 0.012,
+    "nn_crc_scl_l4_errs": 18,
+    "nn_crc_scl_l4_cw": 1500,
+    "nn_crc_scl_l4_time": 45.1
+  },
+  "64": {
+    "N": 64,
+    "ku": 22,
+    "kv": 22,
+    "channel": "abnmac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.039,
+    "nn_scl_l4_errs": 39,
+    "nn_scl_l4_cw": 1000,
+    "nn_scl_l4_time": 76.8,
+    "nn_crc_scl_l4_bler": 0.009,
+    "nn_crc_scl_l4_errs": 9,
+    "nn_crc_scl_l4_cw": 1000,
+    "nn_crc_scl_l4_time": 76.9
+  }
+}

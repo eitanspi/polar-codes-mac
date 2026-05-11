@@ -1,0 +1,52 @@
+Channel,Class,Decoder,N,ku,kv,SC_BLER,NN_BLER,Ratio,Status
+GMAC,C,NPD,16,4,7,0.163,0.111,0.68x,Working
+GMAC,C,NPD,32,7,15,0.068,0.038,0.56x,Working
+GMAC,C,NPD,64,15,29,0.027,0.017,0.63x,Working
+GMAC,C,NPD,128,30,58,0.005,0.007,1.40x,Working
+GMAC,C,NPD,256,59,117,0.002,0.0016,0.80x,Working
+GMAC,C,NPD,512,119,233,0.0008,,,Stage1 not converged
+GMAC,C,NPD,1024,238,467,0.0002,,,Stage1 not converged
+GMAC,C,SC,512,119,233,0.0008,,,Baseline (verifying)
+GMAC,C,SC,1024,238,467,0.0002,,,Baseline (verifying)
+GMAC,B,NCG,32,15,15,0.047,0.04,0.87x,Working
+GMAC,B,NCG,64,31,31,0.028,0.026,1.03x,Working
+GMAC,B,NCG,128,62,62,0.02,0.023,1.43x,Working
+GMAC,B,NCG,256,123,123,0.006,0.023,4.50x,Wall
+BEMAC,B,NCG,16,,,0.011,0.011,1.08x,Working
+BEMAC,B,NCG,32,,,0.008,0.009,1.10x,Working
+BEMAC,B,NCG,64,,,0.006,0.003,0.54x,Working
+BEMAC,B,NCG,128,,,0.002,0.001,0.60x,Working
+BEMAC,B,NCG,256,,,8e-05,4e-05,0.50x,Working
+BEMAC,B,NCG,1024,,,0.0001,0.0001,1.00x,Working
+BEMAC,B,NCG,512,,,,,,Running
+BEMAC,C,SC,16,4,7,0.163,,,"Baseline, NPD pending"
+BEMAC,C,SC,32,7,15,0.068,,,"Baseline, NPD pending"
+BEMAC,C,SC,64,15,29,0.027,,,"Baseline, NPD pending"
+BEMAC,C,SC,128,30,58,0.005,,,"Baseline, NPD pending"
+BEMAC,C,SC,256,59,117,0.002,,,"Baseline, NPD pending"
+BEMAC,C,SC,512,128,256,0.0045,,,"Baseline, NPD pending"
+BEMAC,C,SC,1024,256,512,0.0,,,"Baseline, NPD pending"
+ABNMAC,B,SC,16,3,6,0.078,,,Baseline
+ABNMAC,B,SC,32,6,13,0.125,,,Baseline
+ABNMAC,B,SC,64,13,26,0.092,,,Baseline
+ABNMAC,B,SC,128,26,51,0.071,,,Baseline
+ABNMAC,B,SC,256,51,102,0.043,,,Baseline
+ABNMAC,C,SC,16,3,6,0.062,,,Baseline
+ABNMAC,C,SC,32,6,13,0.025,,,Baseline
+ABNMAC,C,SC,64,13,26,0.05,,,Baseline
+ABNMAC,C,SC,128,26,51,0.028,,,Baseline
+ABNMAC,C,SC,256,51,102,0.013,,,Baseline
+ISI h=0.5,C,SC,16,,,,0.167,,Memory baseline
+ISI h=0.5,C,SC,32,,,,0.06,,Memory baseline
+ISI h=0.5,C,SC,64,,,,0.029,,Memory baseline
+ISI h=0.5,C,SC,128,,,,0.009,,Memory baseline
+ISI h=0.5,C,SC,256,,,,0.006,,Memory baseline
+ISI h=0.8,C,SC,16,,,,0.186,,Memory baseline
+ISI h=0.8,C,SC,32,,,,0.089,,Memory baseline
+ISI h=0.8,C,SC,64,,,,0.054,,Memory baseline
+ISI h=0.8,C,SC,128,,,,0.048,,Memory baseline
+ISI h=0.8,C,SC,256,,,,0.022,,Memory baseline
+Gilbert-Elliott,C,SC,16,,,,0.186,,Memory baseline
+Gilbert-Elliott,C,SC,32,,,,0.085,,Memory baseline
+Gilbert-Elliott,C,SC,64,,,,0.071,,Memory baseline
+Gilbert-Elliott,C,SC,128,,,,0.057,,Memory baseline

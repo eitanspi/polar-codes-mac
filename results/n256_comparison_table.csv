@@ -1,0 +1,8 @@
+decoder,architecture,d,params,N,ku_kv,train_method,inference_mode,n_cw,BLER,vs_SC,leaf_acc_TF,leaf_acc_FR,failure_mode
+SC_analytical,reference,-,-,256,123/123,N/A,sequential,-,~0.005,1.0x,-,-,none
+NPD_A_fast_ce,checknode+bitnode(sign-flip),16,21300,256,123/123,fast_ce,sequential,100,1.0000,~200x_worse,0.421,0.421,total_collapse
+NPD_B_sequential,checknode+bitnode(sign-flip),16,21300,256,123/123,sequential_tf,sequential,100,1.0000,~200x_worse,0.421,0.421,total_collapse
+NPD_C_hybrid,checknode+bitnode(sign-flip),16,21300,256,123/123,hybrid,sequential,100,1.0000,~200x_worse,0.421,0.421,total_collapse
+NPD_fastce_n256,checknode+bitnode(sign-flip),16,21300,256,123/123,fast_ce,sequential,100,1.0000,~200x_worse,0.421,0.421,total_collapse
+CG_n256_long_best,CalcLR+GatedCalcParent+logits2emb,16,39044,256,123/123,curriculum+long,sequential_CG,500,0.0100,~2x_worse,-,-,mild_residual
+CG_campaign_n256,CalcLR+GatedCalcParent+logits2emb,16,39044,256,123/123,campaign+sched,sequential_CG,500,0.0280,~5.6x_worse,-,-,mild_residual

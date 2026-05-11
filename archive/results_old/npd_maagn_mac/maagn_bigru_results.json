@@ -1,0 +1,46 @@
+{
+  "32": {
+    "channel": "maagn",
+    "channel_meta": {
+      "alpha": 0.3,
+      "snr_db": 6.0,
+      "sigma2": 0.251188643150958
+    },
+    "N": 32,
+    "ku": 7,
+    "kv": 15,
+    "encoder": "bigru",
+    "window_size": 2,
+    "d": 32,
+    "hidden": 128,
+    "n_layers": 2,
+    "gru_layers": 1,
+    "stage1_best_bler": 0.11,
+    "stage2_best_bler_true_x": 0.0,
+    "chained": {
+      "n_cw": 2000.0,
+      "errs_u": 222.0,
+      "errs_v": 205.0,
+      "errs_total": 223.0,
+      "bler_u": 0.111,
+      "bler_v": 0.1025,
+      "bler_total": 0.1115
+    },
+    "memoryless_sc": {
+      "n_cw": 2000.0,
+      "errs_u": 151.0,
+      "errs_v": 152.0,
+      "errs_total": 153.0,
+      "bler_u": 0.0755,
+      "bler_v": 0.076,
+      "bler_total": 0.0765
+    },
+    "improvement_ratio": 1.4575163398692812,
+    "stage1_iters": 30000,
+    "stage2_iters": 30000,
+    "stage1_time_min": 19.290087048212687,
+    "stage2_time_min": 20.98485685189565,
+    "s1_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_maagn_mac/maagn_bigru_L1_s1_N32_best.pt",
+    "s2_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_maagn_mac/maagn_bigru_L1_s2_N32_best.pt"
+  }
+}

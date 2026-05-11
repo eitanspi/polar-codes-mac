@@ -1,0 +1,26 @@
+{
+  "N": 256,
+  "ku": 123,
+  "kv": 123,
+  "ckpt": "campaign_n256_sched_best.pt",
+  "snr_db": 6.0,
+  "single_baseline_bler": 0.014,
+  "L4": {
+    "bler_scl": 0.0033333333333333335,
+    "bler_crc_scl": 0.0033333333333333335,
+    "n_cw": 300,
+    "time_s": 504.4
+  },
+  "L8": {
+    "bler_scl": 0.005,
+    "bler_crc_scl": 0.005,
+    "n_cw": 200,
+    "time_s": 729.1
+  },
+  "L16": {
+    "bler_scl": 0.01,
+    "bler_crc_scl": 0.01,
+    "n_cw": 100,
+    "time_s": 746.8
+  }
+}

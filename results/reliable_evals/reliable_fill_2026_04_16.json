@@ -1,0 +1,44 @@
+{
+  "bemac_b_n128_sc": {
+    "label": "BEMAC_B_N128_SC_extra",
+    "N": 128,
+    "ku": 64,
+    "kv": 90,
+    "bler": 0.00115,
+    "ber_u": 0.00021484375,
+    "ber_v": 9.888888888888889e-05,
+    "errs": 23,
+    "n_cw": 20000,
+    "time_min": 7.1,
+    "seed": 77777,
+    "design_file": "bemac_B_n7.npz"
+  },
+  "gmac_b_n256_sc": {
+    "label": "GMAC_B_N256_SC_extra",
+    "N": 256,
+    "ku": 123,
+    "kv": 123,
+    "bler": 0.0041333333333333335,
+    "ber_u": 0.0009555555555555555,
+    "ber_v": 0.0004720867208672087,
+    "errs": 62,
+    "n_cw": 15000,
+    "time_min": 11.0,
+    "seed": 88888,
+    "design_file": "gmac_B_n8_snr6dB.npz"
+  },
+  "gmac_c_n128_sc": {
+    "label": "GMAC_C_N128_SC_extra",
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "bler": 0.0046,
+    "ber_u": 0.0009066666666666666,
+    "ber_v": 0.0004689655172413793,
+    "errs": 23,
+    "n_cw": 5000,
+    "time_min": 0.5,
+    "seed": 99999,
+    "design_file": "gmac_C_n7_snr6dB.npz"
+  }
+}

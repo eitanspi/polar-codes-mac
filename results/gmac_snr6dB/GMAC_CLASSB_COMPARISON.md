@@ -35,6 +35,16 @@ Updated: 2026-04-02
 6. **More training helps** — stable cosine LR (no warm restarts) is critical
 7. **SCL L=4 is essentially perfect at N ≥ 512** (zero errors)
 
+### d=32 model results (153K params, 28hrs training)
+
+| N | d=32 BLER | d=16 BLER | SC | d=32/SC |
+|---|-----------|-----------|-----|---------|
+| 32 | **0.037** | 0.046 | 0.046 | **0.80x** |
+| 64 | **0.020** | 0.026 | 0.025 | **0.80x** |
+| 128 | 0.019 | 0.017 | 0.016 | 1.19x (still training) |
+
+**Key: d=32 beats SC at N=32 and N=64** — model capacity was the bottleneck.
+
 ### Training approaches tried
 
 | Approach | Impact | Status |
@@ -44,7 +54,7 @@ Updated: 2026-04-02
 | Freeze & extend | Breakthrough at N=128 | Works |
 | Scheduled sampling | 21% improvement at N=256 | Modest |
 | C++ tree walk extension | 1.34x speedup | Works |
-| d=32 model | Under-trained, needs days | Inconclusive |
+| d=32 model | **Beats SC at N=32,64** | **Major result** |
 | Fast-CE (NPD-style) | 4-class MAC doesn't work | Failed |
 | Residual connections | Can't learn from scratch | Failed |
 | Multi-depth aux loss | Hurts training | Failed |

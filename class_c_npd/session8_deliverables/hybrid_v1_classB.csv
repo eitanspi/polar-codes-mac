@@ -1,0 +1,3 @@
+N,Iters,Best_BLER,SC_BLER,Ratio,Training
+32,50K,0.098,0.047,2.1x,fast_ce + analytical CalcParent
+256,100K,0.985,0.006,164x,fast_ce + analytical CalcParent

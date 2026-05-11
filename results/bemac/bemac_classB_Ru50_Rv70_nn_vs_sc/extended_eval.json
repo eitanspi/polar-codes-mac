@@ -1,0 +1,72 @@
+{
+  "experiment": "BEMAC Class B, Ru=0.50, Rv=0.70",
+  "purpose": "Re-evaluate N=256/512/1024 with high CW counts to verify suspicious anomaly",
+  "started": "2026-04-09 11:10:52",
+  "original": {
+    "256": {
+      "nn_bler": 4e-05,
+      "sc_bler": 8e-05,
+      "cw": 50000
+    },
+    "512": {
+      "nn_bler": 0.0,
+      "sc_bler": 0.0,
+      "cw": 10000
+    },
+    "1024": {
+      "nn_bler": 0.0001,
+      "sc_bler": 0.0001,
+      "cw": 10000
+    }
+  },
+  "extended": {
+    "256": {
+      "N": 256,
+      "ku": 128,
+      "kv": 179,
+      "nn_errors": 13,
+      "nn_cw": 100000,
+      "nn_bler": 0.00013,
+      "nn_ci_lo": 7.597682147262574e-05,
+      "nn_ci_hi": 0.0002224277150187004,
+      "sc_errors": 8,
+      "sc_cw": 100000,
+      "sc_bler": 8e-05,
+      "sc_ci_lo": 4.053804061932916e-05,
+      "sc_ci_hi": 0.00015787033732442377,
+      "ratio_nn_over_sc": 1.6249999999999998
+    },
+    "512": {
+      "N": 512,
+      "ku": 256,
+      "kv": 358,
+      "nn_errors": 3,
+      "nn_cw": 50000,
+      "nn_bler": 6e-05,
+      "nn_ci_lo": 2.040525032321293e-05,
+      "nn_ci_hi": 0.00017641162784240387,
+      "sc_errors": 5,
+      "sc_cw": 50000,
+      "sc_bler": 0.0001,
+      "sc_ci_lo": 4.2714125011644684e-05,
+      "sc_ci_hi": 0.00023409660706618835,
+      "ratio_nn_over_sc": 0.6
+    },
+    "1024": {
+      "N": 1024,
+      "ku": 512,
+      "kv": 716,
+      "nn_errors": 2,
+      "nn_cw": 20000,
+      "nn_bler": 0.0001,
+      "nn_ci_lo": 2.7423461229448323e-05,
+      "nn_ci_hi": 0.00036458124250705794,
+      "sc_errors": 3,
+      "sc_cw": 20000,
+      "sc_bler": 0.00015,
+      "sc_ci_lo": 5.101389475340828e-05,
+      "sc_ci_hi": 0.0004409716046718622,
+      "ratio_nn_over_sc": 0.6666666666666667
+    }
+  }
+}

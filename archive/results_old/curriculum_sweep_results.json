@@ -1,0 +1,92 @@
+{
+  "16": {
+    "N": 16,
+    "ku": 4,
+    "kv": 7,
+    "sc_bler": 0.1626,
+    "target_1_5x": 0.2439,
+    "stage1": {
+      "best_bler": 0.142,
+      "best_iter": 30000,
+      "time_min": 6.696439814567566,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/curriculum_gmac_c_s1_N16_best.pt"
+    },
+    "stage2": {
+      "best_bler": 0.006,
+      "best_iter": 8000,
+      "time_min": 2.702239684263865,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/curriculum_gmac_c_s2_N16_best.pt"
+    },
+    "chained": {
+      "bler": 0.1362,
+      "ci_low": 0.12697134978769264,
+      "ci_high": 0.14598725066041107,
+      "errs_u": 659,
+      "errs_v": 667,
+      "ratio_to_sc": 0.8376383763837638,
+      "pass": true,
+      "eval_time_min": 0.03106428384780884,
+      "eval_cw": 5000
+    }
+  },
+  "32": {
+    "N": 32,
+    "ku": 7,
+    "kv": 15,
+    "sc_bler": 0.0684,
+    "target_1_5x": 0.1026,
+    "stage1": {
+      "best_bler": 0.116,
+      "best_iter": 49995,
+      "time_min": 79.28232241868973,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/curriculum_gmac_c_s1_N32_best.pt"
+    },
+    "stage2": {
+      "best_bler": 0.0,
+      "best_iter": 2000,
+      "time_min": 24.46771161556244,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/curriculum_gmac_c_s2_N32_best.pt"
+    },
+    "chained": {
+      "bler": 0.129,
+      "ci_low": 0.11999276043346932,
+      "ci_high": 0.13857689532861558,
+      "errs_u": 645,
+      "errs_v": 631,
+      "ratio_to_sc": 1.8859649122807018,
+      "pass": false,
+      "eval_time_min": 0.06191396713256836,
+      "eval_cw": 5000
+    }
+  },
+  "64": {
+    "N": 64,
+    "ku": 15,
+    "kv": 29,
+    "sc_bler": 0.0266,
+    "target_1_5x": 0.0399,
+    "stage1": {
+      "best_bler": 0.16,
+      "best_iter": 79995,
+      "time_min": 152.3906967520714,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/curriculum_gmac_c_s1_N64_best.pt"
+    },
+    "stage2": {
+      "best_bler": 0.0,
+      "best_iter": 2000,
+      "time_min": 18.762162701288858,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/curriculum_gmac_c_s2_N64_best.pt"
+    },
+    "chained": {
+      "bler": 0.1758,
+      "ci_low": 0.16549893520986658,
+      "ci_high": 0.18659886101134077,
+      "errs_u": 878,
+      "errs_v": 875,
+      "ratio_to_sc": 6.609022556390978,
+      "pass": false,
+      "eval_time_min": 0.1533599297205607,
+      "eval_cw": 5000
+    }
+  }
+}

@@ -1,0 +1,40 @@
+[
+  {
+    "channel": "GMAC",
+    "class": "B",
+    "N": 32,
+    "decoder": "NCG",
+    "ku": 15,
+    "kv": 15,
+    "sigma2": 0.251188643150958,
+    "snr_db": 6.0,
+    "bler": 0.050333333333333334,
+    "n_cw": 3000,
+    "n_errors": 151,
+    "ci_lo": 0.04306865345843006,
+    "ci_hi": 0.05874816670945097,
+    "elapsed_s": 3.5,
+    "reliable": true,
+    "checkpoint": "ncg_gmac_mlp_N32.pt",
+    "path_i": 16
+  },
+  {
+    "channel": "GMAC",
+    "class": "B",
+    "N": 64,
+    "decoder": "NCG",
+    "ku": 31,
+    "kv": 31,
+    "sigma2": 0.251188643150958,
+    "snr_db": 6.0,
+    "bler": 0.0282,
+    "n_cw": 5000,
+    "n_errors": 141,
+    "ci_lo": 0.02396105653691747,
+    "ci_hi": 0.03316337362090368,
+    "elapsed_s": 12.4,
+    "reliable": true,
+    "checkpoint": "ncg_gmac_mlp_N64.pt",
+    "path_i": 32
+  }
+]

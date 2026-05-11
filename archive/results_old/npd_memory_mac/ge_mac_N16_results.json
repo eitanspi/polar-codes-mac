@@ -1,0 +1,57 @@
+{
+  "16": {
+    "channel": "ge_mac",
+    "channel_meta": {
+      "p_gb": 0.08,
+      "p_bg": 0.4,
+      "sigma2_good": 0.2009509145207664,
+      "sigma2_bad": 1.25594321575479,
+      "snr_db_ref": 6.0
+    },
+    "design_proxy": "gmac_C_n4_snr6dB.npz",
+    "N": 16,
+    "ku": 4,
+    "kv": 7,
+    "encoder": "window",
+    "window_size": 2,
+    "d": 16,
+    "hidden": 64,
+    "n_layers": 2,
+    "gru_layers": 1,
+    "stage1_best_bler": 0.14,
+    "stage2_best_bler_true_x": 0.015,
+    "chained": {
+      "n_cw": 2000.0,
+      "errs_u": 287.0,
+      "errs_v": 333.0,
+      "errs_total": 339.0,
+      "bler_u": 0.1435,
+      "bler_v": 0.1665,
+      "bler_total": 0.1695
+    },
+    "memoryless_sc": {
+      "n_cw": 300,
+      "errs_u": 58,
+      "errs_v": 64,
+      "errs_total": 64,
+      "bler_u": 0.19333333333333333,
+      "bler_v": 0.21333333333333335,
+      "bler_total": 0.21333333333333335
+    },
+    "trellis_sc": {
+      "n_cw": 300,
+      "errs_u": 39,
+      "errs_v": 48,
+      "errs_total": 48,
+      "bler_u": 0.13,
+      "bler_v": 0.16,
+      "bler_total": 0.16
+    },
+    "stage1_iters": 20000,
+    "stage2_iters": 20000,
+    "stage1_time_min": 3.8566396315892537,
+    "stage2_time_min": 4.385815918445587,
+    "s1_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/ge_mac_window_w2_s1_N16_best.pt",
+    "s2_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/ge_mac_window_w2_s2_N16_best.pt"
+  }
+}

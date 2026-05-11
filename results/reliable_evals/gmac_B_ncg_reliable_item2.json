@@ -1,0 +1,21 @@
+[
+  {
+    "channel": "GMAC",
+    "class": "B",
+    "N": 512,
+    "decoder": "NCG",
+    "ku": 246,
+    "kv": 246,
+    "sigma2": 0.251188643150958,
+    "snr_db": 6.0,
+    "bler": 0.0538,
+    "n_cw": 10000,
+    "n_errors": 538,
+    "ci_lo": 0.049546673520308566,
+    "ci_hi": 0.05839601921485028,
+    "elapsed_s": 1319.0,
+    "reliable": true,
+    "checkpoint": "ncg_gmac_mlp_N512.pt",
+    "path_i": 256
+  }
+]

@@ -5,8 +5,19 @@ __pycache__/
 *.aux
 *.out
 *.toc
+*.snm
+*.nav
+*.stdout
+nohup.out
 saved_models/*.pt
 results_mess/
 .idea/
 venv/
 env/
+
+# Checkpoint files — regenerable, often hundreds of MB each
+*.pt
+
+# Local cache of cluster results pull (not source-of-truth)
+results_local/cluster_pull/
+vpn/

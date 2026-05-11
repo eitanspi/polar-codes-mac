@@ -1,0 +1,56 @@
+{
+  "isi_n1024_npd_topup": {
+    "tag": "isi_n1024_npd_topup",
+    "N": 1024,
+    "ku": 239,
+    "kv": 467,
+    "n": 10,
+    "extra_eval": {
+      "bler_u": 2e-05,
+      "bler_v": 1.75e-05,
+      "bler_chained": 2.25e-05,
+      "errs_u": 8,
+      "errs_v": 7,
+      "errs_total": 9,
+      "n_cw": 400000,
+      "seed": 100024
+    },
+    "done": true
+  },
+  "maagn_n512_npd_topup": {
+    "tag": "maagn_n512_npd_topup",
+    "N": 512,
+    "ku": 119,
+    "kv": 233,
+    "n": 9,
+    "extra_eval": {
+      "bler_u": 4e-05,
+      "bler_v": 2.6666666666666667e-05,
+      "bler_chained": 4e-05,
+      "errs_u": 12,
+      "errs_v": 8,
+      "errs_total": 12,
+      "n_cw": 300000,
+      "seed": 99512
+    },
+    "done": true
+  },
+  "maagn_n1024_npd_topup": {
+    "tag": "maagn_n1024_npd_topup",
+    "N": 1024,
+    "ku": 239,
+    "kv": 467,
+    "n": 10,
+    "extra_eval": {
+      "bler_u": 1.1666666666666666e-05,
+      "bler_v": 2.1666666666666667e-05,
+      "bler_chained": 2.6666666666666667e-05,
+      "errs_u": 7,
+      "errs_v": 13,
+      "errs_total": 16,
+      "n_cw": 600000,
+      "seed": 100024
+    },
+    "done": true
+  }
+}

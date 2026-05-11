@@ -1,0 +1,17 @@
+{
+  "16": {
+    "channel": "abnmac",
+    "N": 16,
+    "ku": null,
+    "kv": null,
+    "stage1_bler": 0.458,
+    "stage1_time_min": 0.9932175556818644,
+    "stage2_bler": 0.976,
+    "stage2_time_min": 0.26998020013173424,
+    "chained_bler": 0.991,
+    "chained_ci_low": 0.9858178431626362,
+    "chained_ci_high": 0.9942995473536601,
+    "chained_errs_u": 959,
+    "chained_errs_v": 1959
+  }
+}

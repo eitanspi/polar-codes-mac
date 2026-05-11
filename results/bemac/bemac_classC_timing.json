@@ -1,0 +1,98 @@
+{
+  "8": {
+    "N": 8,
+    "ku": 2,
+    "kv": 5,
+    "path_i": 8,
+    "nn_bler_smoke": 0.045,
+    "sc_bler_smoke": 0.09,
+    "nn_ms_per_cw": 0.10812146007083356,
+    "sc_ms_per_cw": 0.00942687998758629,
+    "nn_over_sc_time": 11.4694851544957,
+    "n_cw_used": 200
+  },
+  "16": {
+    "N": 16,
+    "ku": 5,
+    "kv": 10,
+    "path_i": 16,
+    "nn_bler_smoke": 0.01,
+    "sc_bler_smoke": 0.115,
+    "nn_ms_per_cw": 0.23238521011080593,
+    "sc_ms_per_cw": 0.013467289682012051,
+    "nn_over_sc_time": 17.25552918202966,
+    "n_cw_used": 200
+  },
+  "32": {
+    "N": 32,
+    "ku": 10,
+    "kv": 19,
+    "path_i": 32,
+    "nn_bler_smoke": 0.005,
+    "sc_bler_smoke": 0.1,
+    "nn_ms_per_cw": 0.4772110452177003,
+    "sc_ms_per_cw": 0.02925499517004937,
+    "nn_over_sc_time": 16.31212182548089,
+    "n_cw_used": 200
+  },
+  "64": {
+    "N": 64,
+    "ku": 19,
+    "kv": 38,
+    "path_i": 64,
+    "nn_bler_smoke": 0.0,
+    "sc_bler_smoke": 0.055,
+    "nn_ms_per_cw": 1.0046347900060937,
+    "sc_ms_per_cw": 0.06533604522701353,
+    "nn_over_sc_time": 15.376424858826965,
+    "n_cw_used": 200
+  },
+  "128": {
+    "N": 128,
+    "ku": 38,
+    "kv": 77,
+    "path_i": 128,
+    "nn_bler_smoke": 0.0,
+    "sc_bler_smoke": 0.03,
+    "nn_ms_per_cw": 3.0892106250394136,
+    "sc_ms_per_cw": 0.14761104510398582,
+    "nn_over_sc_time": 20.928045207343352,
+    "n_cw_used": 200
+  },
+  "256": {
+    "N": 256,
+    "ku": 77,
+    "kv": 154,
+    "path_i": 256,
+    "nn_bler_smoke": 0.0,
+    "sc_bler_smoke": 0.02,
+    "nn_ms_per_cw": 8.997529170010239,
+    "sc_ms_per_cw": 0.5700741696637124,
+    "nn_over_sc_time": 15.783085164721452,
+    "n_cw_used": 100
+  },
+  "512": {
+    "N": 512,
+    "ku": 154,
+    "kv": 307,
+    "path_i": 512,
+    "nn_bler_smoke": 0.0,
+    "sc_bler_smoke": 0.0,
+    "nn_ms_per_cw": 35.1174958399497,
+    "sc_ms_per_cw": 2.3725075006950647,
+    "nn_over_sc_time": 14.801848183688126,
+    "n_cw_used": 50
+  },
+  "1024": {
+    "N": 1024,
+    "ku": 307,
+    "kv": 614,
+    "path_i": 1024,
+    "nn_bler_smoke": 0.0,
+    "sc_bler_smoke": 0.0,
+    "nn_ms_per_cw": 126.5790416665065,
+    "sc_ms_per_cw": 11.955516700011989,
+    "nn_over_sc_time": 10.587500719762247,
+    "n_cw_used": 30
+  }
+}

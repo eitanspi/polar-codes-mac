@@ -1,0 +1,12 @@
+{
+  "N": 256,
+  "ku": 123,
+  "kv": 123,
+  "ckpt": "campaign_n256_sched_best.pt",
+  "L4_hicw": {
+    "bler_scl": 0.023666666666666666,
+    "bler_crc_scl": 0.019,
+    "n_cw": 3000,
+    "time_s": 4565.8
+  }
+}

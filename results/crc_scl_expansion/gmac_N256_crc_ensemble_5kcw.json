@@ -1,0 +1,20 @@
+{
+  "N": 256,
+  "ku": 123,
+  "kv": 123,
+  "n_cw": 5000,
+  "models": [
+    "campaign_n256_sched_best.pt",
+    "n256_long_best.pt",
+    "ncg_gmac_mlp_N256.pt"
+  ],
+  "per_model_bler": {
+    "campaign_n256_sched_best.pt": 0.0146,
+    "n256_long_best.pt": 0.0142,
+    "ncg_gmac_mlp_N256.pt": 0.0186
+  },
+  "ensemble_bler": 0.011,
+  "oracle_bler": 0.0108,
+  "no_crc_pass_fraction": 0.01,
+  "time_s": 154.0
+}

@@ -1,0 +1,214 @@
+{
+  "config": {
+    "snr_db": 6.0,
+    "h": 0.3,
+    "n_cw": 10000,
+    "seed_base": 20260416,
+    "channel": "ISIMAC(h=0.3) at SNR=6.0 dB"
+  },
+  "results": {
+    "N=16": {
+      "Au": [
+        12,
+        14,
+        15,
+        16
+      ],
+      "Av": [
+        8,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "ku": 4,
+      "kv": 7,
+      "chained_trellis_sc": {
+        "bler": 0.1664,
+        "errs_total": 1664,
+        "errs_u": 1637,
+        "errs_v": 1664,
+        "n_cw": 10000,
+        "time_s": 11.54,
+        "ci_lo": 0.1592285736011291,
+        "ci_hi": 0.1738276395240367
+      },
+      "npd_window_w2": {
+        "bler": 0.1439,
+        "errs_total": 1439,
+        "errs_u": 1396,
+        "errs_v": 1438,
+        "n_cw": 10000,
+        "time_s": 2.99,
+        "ci_lo": 0.13715733784037068,
+        "ci_hi": 0.15091615584629467,
+        "s1_ckpt": "isi_mac_window_w2_s1_N16_best.pt",
+        "s2_ckpt": "isi_mac_window_w2_s2_N16_best.pt"
+      },
+      "npd_bigru_L1": {
+        "bler": 0.1432,
+        "errs_total": 1432,
+        "errs_u": 1371,
+        "errs_v": 1431,
+        "n_cw": 10000,
+        "time_s": 3.33,
+        "ci_lo": 0.13647154348527446,
+        "ci_hi": 0.15020248781885975,
+        "s1_ckpt": "isi_mac_bigru_L1_s1_N16_best.pt",
+        "s2_ckpt": "isi_mac_bigru_L1_s2_N16_best.pt"
+      }
+    },
+    "N=32": {
+      "Au": [
+        16,
+        24,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "Av": [
+        12,
+        14,
+        15,
+        16,
+        20,
+        22,
+        23,
+        24,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "ku": 7,
+      "kv": 15,
+      "chained_trellis_sc": {
+        "bler": 0.0825,
+        "errs_total": 825,
+        "errs_u": 825,
+        "errs_v": 816,
+        "n_cw": 10000,
+        "time_s": 23.18,
+        "ci_lo": 0.07726652796988463,
+        "ci_hi": 0.0880541224490504
+      },
+      "npd_window_w2": {
+        "bler": 0.0857,
+        "errs_total": 857,
+        "errs_u": 853,
+        "errs_v": 833,
+        "n_cw": 10000,
+        "time_s": 6.72,
+        "ci_lo": 0.08037140056924495,
+        "ci_hi": 0.0913467921698324,
+        "s1_ckpt": "isi_mac_window_w2_s1_N32_best.pt",
+        "s2_ckpt": "isi_mac_window_w2_s2_N32_best.pt"
+      },
+      "npd_bigru_L1": {
+        "bler": 0.113,
+        "errs_total": 1130,
+        "errs_u": 1122,
+        "errs_v": 1074,
+        "n_cw": 10000,
+        "time_s": 7.13,
+        "ci_lo": 0.106942805836092,
+        "ci_hi": 0.11935441982169928,
+        "s1_ckpt": "isi_mac_bigru_L1_s1_N32_best.pt",
+        "s2_ckpt": "isi_mac_bigru_L1_s2_N32_best.pt"
+      }
+    },
+    "N=64": {
+      "Au": [
+        32,
+        46,
+        47,
+        48,
+        52,
+        54,
+        55,
+        56,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64
+      ],
+      "Av": [
+        16,
+        22,
+        24,
+        26,
+        27,
+        28,
+        30,
+        31,
+        32,
+        38,
+        39,
+        40,
+        42,
+        44,
+        46,
+        47,
+        48,
+        50,
+        51,
+        52,
+        54,
+        55,
+        56,
+        58,
+        59,
+        60,
+        62,
+        63,
+        64
+      ],
+      "ku": 15,
+      "kv": 29,
+      "chained_trellis_sc": {
+        "bler": 0.0399,
+        "errs_total": 399,
+        "errs_u": 399,
+        "errs_v": 393,
+        "n_cw": 10000,
+        "time_s": 48.98,
+        "ci_lo": 0.03623715768013435,
+        "ci_hi": 0.043916210601906404
+      },
+      "npd_window_w2": {
+        "bler": 0.0699,
+        "errs_total": 699,
+        "errs_u": 688,
+        "errs_v": 697,
+        "n_cw": 10000,
+        "time_s": 14.24,
+        "ci_lo": 0.06506581756351086,
+        "ci_hi": 0.0750645099698639,
+        "s1_ckpt": "isi_mac_window_w2_s1_N64_best.pt",
+        "s2_ckpt": "isi_mac_window_w2_s2_N64_best.pt"
+      },
+      "npd_bigru_L1": {
+        "bler": 0.0489,
+        "errs_total": 489,
+        "errs_u": 466,
+        "errs_v": 486,
+        "n_cw": 10000,
+        "time_s": 15.78,
+        "ci_lo": 0.04484357513093346,
+        "ci_hi": 0.0533028809265075,
+        "s1_ckpt": "isi_mac_bigru_L1_s1_N64_best.pt",
+        "s2_ckpt": "isi_mac_bigru_L1_s2_N64_best.pt"
+      }
+    }
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "16": {
+    "N": 16,
+    "ku": 4,
+    "kv": 7,
+    "n": 4,
+    "s1_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/npd_finetune/N16_s1_ft.pt",
+    "s2_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/npd_finetune/N16_s2_ft.pt",
+    "eval": {
+      "bler_u": 0.16606,
+      "bler_v": 0.16639,
+      "bler_chained": 0.16651,
+      "errs_u": 16606,
+      "errs_v": 16639,
+      "errs_total": 16651,
+      "n_cw": 100000,
+      "seed": 99016
+    },
+    "done": true
+  },
+  "32": {
+    "N": 32,
+    "ku": 7,
+    "kv": 15,
+    "n": 5,
+    "s1_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/npd_finetune/N32_s1_ft.pt",
+    "s2_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/npd_finetune/N32_s2_ft.pt",
+    "eval": {
+      "bler_u": 0.06894,
+      "bler_v": 0.06899,
+      "bler_chained": 0.06907,
+      "errs_u": 6894,
+      "errs_v": 6899,
+      "errs_total": 6907,
+      "n_cw": 100000,
+      "seed": 99032
+    },
+    "done": true
+  },
+  "64": {
+    "N": 64,
+    "ku": 15,
+    "kv": 29,
+    "n": 6,
+    "s1_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/npd_finetune/N64_s1_ft.pt",
+    "s2_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/npd_finetune/N64_s2_ft.pt",
+    "eval": {
+      "bler_u": 0.03804,
+      "bler_v": 0.03804,
+      "bler_chained": 0.03804,
+      "errs_u": 1902,
+      "errs_v": 1902,
+      "errs_total": 1902,
+      "n_cw": 50000,
+      "seed": 99064
+    },
+    "done": true
+  },
+  "128": {
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "n": 7,
+    "s1_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N128/s1.pt",
+    "s2_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N128/s2.pt",
+    "eval": {
+      "bler_u": 0.0137,
+      "bler_v": 0.0137,
+      "bler_chained": 0.0137,
+      "errs_u": 685,
+      "errs_v": 685,
+      "errs_total": 685,
+      "n_cw": 50000,
+      "seed": 99128
+    },
+    "done": true
+  },
+  "256": {
+    "N": 256,
+    "ku": 59,
+    "kv": 117,
+    "n": 8,
+    "s1_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N256/s1.pt",
+    "s2_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N256/s2.pt",
+    "eval": {
+      "bler_u": 0.00138,
+      "bler_v": 0.00138,
+      "bler_chained": 0.00138,
+      "errs_u": 69,
+      "errs_v": 69,
+      "errs_total": 69,
+      "n_cw": 50000,
+      "seed": 99256
+    },
+    "done": true
+  },
+  "512": {
+    "N": 512,
+    "ku": 119,
+    "kv": 233,
+    "n": 9,
+    "s1_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N512/s1.pt",
+    "s2_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N512/s2.pt",
+    "eval": {
+      "bler_u": 0.00017,
+      "bler_v": 0.00017,
+      "bler_chained": 0.00017,
+      "errs_u": 17,
+      "errs_v": 17,
+      "errs_total": 17,
+      "n_cw": 100000,
+      "seed": 99512
+    },
+    "done": true
+  },
+  "1024": {
+    "N": 1024,
+    "ku": 239,
+    "kv": 467,
+    "n": 10,
+    "s1_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N1024/s1.pt",
+    "s2_path": "/gpfs0/bgu-haimp/users/eitansp/polar_project/class_c_npd/results/isi_campaign/N1024/s2.pt",
+    "eval": {
+      "bler_u": 0.0,
+      "bler_v": 0.0,
+      "bler_chained": 0.0,
+      "errs_u": 0,
+      "errs_v": 0,
+      "errs_total": 0,
+      "n_cw": 20000,
+      "seed": 100024
+    },
+    "done": true
+  }
+}

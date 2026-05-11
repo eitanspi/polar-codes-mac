@@ -1,0 +1,28 @@
+{
+  "ncg_gmac_mlp_N128.pt": {
+    "bler": 0.021,
+    "n_cw": 2000,
+    "time_s": 7.1
+  },
+  "ncg_gmac_d32_N128.pt": {
+    "bler": 1.0,
+    "n_cw": 2000,
+    "time_s": 6.7
+  },
+  "ncg_gmac_freeze_extend_N128.pt": {
+    "bler": 0.023,
+    "n_cw": 2000,
+    "time_s": 7.0
+  },
+  "ncg_gmac_levelenc_N128.pt": {
+    "bler": 1.0,
+    "n_cw": 2000,
+    "time_s": 6.7
+  },
+  "ncg_gmac_perlevel_N128.pt": {
+    "bler": 1.0,
+    "n_cw": 2000,
+    "time_s": 6.8
+  },
+  "d32_30hr_N128_best.pt": "state_err: Error(s) in loading state_dict for SimpleMLP_Gmac:\n\tsize mismatch for z_encoder.0.weight: copying a param with shape torch.Size([64, 1]) from checkpoint, the shape in current model is torch.Size([32, 1]).\n\tsize mismatch for z_encoder.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for z_encoder.2.weight: copying a param with shape torch.Size([32, 64]) from checkpoint, the shape in current model is torch.Size([16, 32]).\n\tsize mismatch for z_encoder.2.bias: copying a param with shape torch.Size([32]) from checkpoint, the shape in current model is torch.Size([16])."
+}

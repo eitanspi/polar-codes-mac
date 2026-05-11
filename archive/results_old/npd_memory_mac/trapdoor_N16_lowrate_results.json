@@ -1,0 +1,53 @@
+{
+  "16": {
+    "channel": "trapdoor_mac",
+    "channel_meta": {
+      "p_noise": 0.1
+    },
+    "design_proxy": "bemac_C_n4.npz",
+    "N": 16,
+    "ku": 2,
+    "kv": 3,
+    "encoder": "window",
+    "window_size": 2,
+    "d": 16,
+    "hidden": 64,
+    "n_layers": 2,
+    "gru_layers": 1,
+    "stage1_best_bler": 0.495,
+    "stage2_best_bler_true_x": 0.11,
+    "chained": {
+      "n_cw": 2000.0,
+      "errs_u": 1082.0,
+      "errs_v": 1111.0,
+      "errs_total": 1156.0,
+      "bler_u": 0.541,
+      "bler_v": 0.5555,
+      "bler_total": 0.578
+    },
+    "memoryless_sc": {
+      "n_cw": 300,
+      "errs_u": 210,
+      "errs_v": 263,
+      "errs_total": 280,
+      "bler_u": 0.7,
+      "bler_v": 0.8766666666666667,
+      "bler_total": 0.9333333333333333
+    },
+    "trellis_sc": {
+      "n_cw": 300,
+      "errs_u": 227,
+      "errs_v": 173,
+      "errs_total": 234,
+      "bler_u": 0.7566666666666667,
+      "bler_v": 0.5766666666666667,
+      "bler_total": 0.78
+    },
+    "stage1_iters": 15000,
+    "stage2_iters": 15000,
+    "stage1_time_min": 4.613151367505392,
+    "stage2_time_min": 4.3774774471918745,
+    "s1_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/trapdoor_mac_window_w2_lowrate_s1_N16_best.pt",
+    "s2_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/trapdoor_mac_window_w2_lowrate_s2_N16_best.pt"
+  }
+}

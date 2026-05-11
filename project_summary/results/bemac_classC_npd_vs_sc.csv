@@ -1,0 +1,5 @@
+N,ku,kv,SC_BLER,NPD_S1_BLER,NPD_S2_BLER,NPD_Chained,Ratio
+16,4,8,0.163,0.07,0.0,0.07,0.43x
+32,8,16,0.068,0.01,0.0,0.01,0.15x
+64,16,32,0.027,0.072,,,2.67x (still training)
+128,32,64,0.005,,,,pending

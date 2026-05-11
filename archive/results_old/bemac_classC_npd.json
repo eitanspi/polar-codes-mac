@@ -1,0 +1,38 @@
+{
+  "16": {
+    "N": 16,
+    "ku": 4,
+    "kv": 8,
+    "s1_bler": 0.07,
+    "s2_bler": 0.0,
+    "chained_bler": 0.07,
+    "sc_bler": 0.163,
+    "ratio": 0.43
+  },
+  "32": {
+    "N": 32,
+    "ku": 8,
+    "kv": 16,
+    "s1_bler": 0.01,
+    "s2_bler": 0.0,
+    "chained_bler": 0.01,
+    "sc_bler": 0.068,
+    "ratio": 0.15
+  },
+  "64": {
+    "N": 64,
+    "s1_bler": 0.072,
+    "s2_bler": 0.0,
+    "sc_bler": 0.027,
+    "chained_bler": 0.072,
+    "ratio": 2.67
+  },
+  "128": {
+    "N": 128,
+    "s1_bler": 0.064,
+    "s2_bler": 0.0,
+    "sc_bler": 0.005,
+    "chained_bler": 0.064,
+    "ratio": 12.8
+  }
+}

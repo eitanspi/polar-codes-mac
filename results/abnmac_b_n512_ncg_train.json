@@ -1,0 +1,12 @@
+{
+  "N": 512,
+  "ku": 205,
+  "kv": 205,
+  "total_iters": 4000,
+  "batch_size": 4,
+  "init_bler": 0.91,
+  "final_bler": 0.034,
+  "best_bler": 0.034,
+  "time_min": 63.6,
+  "warm_start": "ncg_abnmac_classB_N256_best.pt"
+}

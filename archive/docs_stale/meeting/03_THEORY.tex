@@ -1,0 +1,112 @@
+\documentclass[11pt]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{enumitem}
+
+\newtcolorbox{concept}{colback=gray!5!white, colframe=gray!60!black,
+  fonttitle=\bfseries, boxrule=0.5pt, arc=2pt}
+
+\title{\textbf{How It Works --- Key Concepts}\\[4pt]
+\large Neural Polar Decoding for Two-User MAC}
+\author{}
+\date{April 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+%% ============================================================
+\begin{concept}[title=1. MAC Polar Codes]
+Two users $U$ and $V$ each independently encode their message bits using a standard polar encoder ($G_N = B_N F^{\otimes n}$: bit-reversal then XOR butterfly).
+Both transmit simultaneously; the receiver sees $Z = f(X, Y) + \text{noise}$.
+A \textbf{path} $\pi \in \{0,1\}^{2N}$ determines the decoding order: at each of $2N$ leaf positions, the decoder decides one bit of either $U$ or $V$.
+Class B (symmetric rate) uses an interleaved path; Class C (corner rate) decodes all of $U$ first, then $V$.
+\end{concept}
+
+%% ============================================================
+\begin{concept}[title=2. The Two Core Operations]
+All polar decoding reduces to two tensor operations on $2 \times 2$ probability tables (one dimension per user):
+
+\medskip
+\textbf{Circular convolution (\texttt{circ\_conv}):} Marginalizes over an unknown bit linked by XOR encoding.
+Given a tensor $T(a, b)$ representing $\Pr[\text{data} \mid u_{\text{left}}=a, v_{\text{right}}=b]$, convolution sums over the values consistent with $u_{\text{left}} \oplus u_{\text{right}} = c$:
+\[
+  (\texttt{circ\_conv}\; T)[c] = \sum_{a \oplus b = c} T(a, b)
+\]
+This is exactly circular convolution of each row/column. Used in \texttt{CalcLeft}.
+
+\medskip
+\textbf{Normalized product (\texttt{norm\_prod}):} Combines two independent pieces of evidence about the \emph{same} variable. If $T_1$ and $T_2$ are both likelihoods for the same $(u, v)$:
+\[
+  (\texttt{norm\_prod}(T_1, T_2))[a, b] \propto T_1(a, b) \cdot T_2(a, b)
+\]
+This is pointwise multiplication followed by normalization. Used in \texttt{CalcRight} and at leaves.
+\end{concept}
+
+%% ============================================================
+\begin{concept}[title=3. CalcLeft / CalcRight / CalcParent]
+The decoder operates on a binary tree with $N$ leaves. Each edge stores a $2 \times 2$ tensor.
+
+\begin{itemize}[nosep]
+  \item \textbf{CalcLeft} (top-down): Given the parent's top-down message, compute the left child's message using \texttt{circ\_conv}. This marginalizes over the right child's unknown contribution.
+  \item \textbf{CalcRight} (top-down): Given the parent's top-down message and the left child's decision, compute the right child's message using \texttt{norm\_prod}. The left child's value is now known, so we condition on it.
+  \item \textbf{CalcParent} (bottom-up): After deciding a leaf, propagate the decision upward. Converts a child's ``as-child'' tensor to the parent's ``as-parent'' tensor using \texttt{circ\_conv}.
+\end{itemize}
+
+These three operations are applied recursively, navigating the tree in bit-reversal order to decode all $2N$ bits.
+\end{concept}
+
+%% ============================================================
+\begin{concept}[title=4. Chained Decoding (Two-Stage)]
+For the MAC, decoding is \textbf{chained}:
+\begin{enumerate}[nosep]
+  \item \textbf{Stage 1:} Decode user $U$, treating $V$ as noise. The channel likelihoods marginalize over all possible $V$ values.
+  \item \textbf{Stage 2:} Given the decoded $\hat{U}$, subtract its contribution from the received signal and decode $V$.
+\end{enumerate}
+For Class C (corner rate), the path naturally separates the two stages.
+For Class B (interleaved path), $U$ and $V$ bits are decoded alternately --- each decision affects both users.
+\end{concept}
+
+%% ============================================================
+\begin{concept}[title=5. The Neural Replacement (NPD / NCG)]
+Replace exact $2 \times 2$ tensors with learned $d$-dimensional embeddings:
+\begin{itemize}[nosep]
+  \item Each edge stores a vector $\mathbf{e} \in \mathbb{R}^d$ instead of a $2 \times 2$ table.
+  \item \texttt{CalcLeft}, \texttt{CalcRight}, \texttt{CalcParent} become \textbf{learned MLPs}: $f_\theta: \mathbb{R}^d \to \mathbb{R}^d$.
+  \item At each leaf, a \textbf{decision head} maps the $d$-dim embedding to a bit probability.
+  \item Channel observations $z$ are mapped to initial $d$-dim embeddings via a learned \textbf{z\_encoder}.
+\end{itemize}
+
+\textbf{NPD} (Neural Polar Decoder): replaces CalcLeft/Right/Parent with neural networks.\\
+\textbf{NCG} (Neural Computational Graph): same idea applied to the full SC computational graph, using the interleaved tree structure from Ren et al.\ (2025).
+
+Key advantage: the neural operations can implicitly learn channel structure (noise distribution, memory, interference) without explicit channel modeling.
+\end{concept}
+
+%% ============================================================
+\begin{concept}[title=6. Training: \texttt{fast\_ce}]
+Training is \textbf{teacher-forced and parallel}:
+\begin{itemize}[nosep]
+  \item Generate random codewords and channel outputs.
+  \item Run the full tree computation with \emph{ground-truth} bits at each decision (teacher forcing). No sequential error propagation during training.
+  \item Cross-entropy loss at every leaf: $\mathcal{L} = -\sum_{t=1}^{2N} \log p_\theta(\hat{b}_t = b_t)$.
+  \item All $2N$ leaves computed in one forward pass; gradient depth is $O(\log N)$ (tree depth), not $O(N)$.
+\end{itemize}
+This enables training at $N = 1024$ in reasonable time. At \emph{test} time, decoding is sequential (each decision feeds into the next).
+\end{concept}
+
+%% ============================================================
+\begin{concept}[title=7. Three-Phase Design]
+\begin{enumerate}[nosep]
+  \item \textbf{Rate-1 training:} Train the neural decoder at rate 1 (no frozen bits). The model learns the channel and tree operations without needing a good frozen-set design.
+  \item \textbf{MI ranking:} Use the trained model's leaf cross-entropies as mutual information estimates. Rank bit positions by reliability. Select the $k_u + k_v$ most reliable positions as information bits.
+  \item \textbf{Retrain at target rate:} Freeze the selected positions and retrain the decoder. The frozen-set and decoder are now \emph{co-adapted}.
+\end{enumerate}
+This avoids the chicken-and-egg problem: you need a good frozen set to train a decoder, but you need a decoder to evaluate frozen-set quality.
+\end{concept}
+
+\end{document}

@@ -1,0 +1,86 @@
+{
+  "32": {
+    "channel": "isi_mac",
+    "channel_meta": {
+      "h": 0.3,
+      "snr_db": 6.0
+    },
+    "N": 32,
+    "ku": 7,
+    "kv": 15,
+    "encoder": "bigru",
+    "window_size": 2,
+    "d": 16,
+    "hidden": 64,
+    "n_layers": 2,
+    "gru_layers": 1,
+    "stage1_best_bler": 0.11,
+    "stage2_best_bler_true_x": 0.0,
+    "chained": {
+      "n_cw": 2000.0,
+      "errs_u": 223.0,
+      "errs_v": 210.0,
+      "errs_total": 223.0,
+      "bler_u": 0.1115,
+      "bler_v": 0.105,
+      "bler_total": 0.1115
+    },
+    "trellis_sc": {
+      "n_cw": 500.0,
+      "errs_u": 36.0,
+      "errs_v": 36.0,
+      "errs_total": 36.0,
+      "bler_u": 0.072,
+      "bler_v": 0.072,
+      "bler_total": 0.072
+    },
+    "stage1_iters": 40000,
+    "stage2_iters": 40000,
+    "stage1_time_min": 11.330851872762045,
+    "stage2_time_min": 11.340938953558604,
+    "s1_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/isi_mac_bigru_L1_s1_N32_best.pt",
+    "s2_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/isi_mac_bigru_L1_s2_N32_best.pt"
+  },
+  "64": {
+    "channel": "isi_mac",
+    "channel_meta": {
+      "h": 0.3,
+      "snr_db": 6.0
+    },
+    "N": 64,
+    "ku": 15,
+    "kv": 29,
+    "encoder": "bigru",
+    "window_size": 2,
+    "d": 16,
+    "hidden": 64,
+    "n_layers": 2,
+    "gru_layers": 1,
+    "stage1_best_bler": 0.03,
+    "stage2_best_bler_true_x": 0.0,
+    "chained": {
+      "n_cw": 2000.0,
+      "errs_u": 84.0,
+      "errs_v": 85.0,
+      "errs_total": 85.0,
+      "bler_u": 0.042,
+      "bler_v": 0.0425,
+      "bler_total": 0.0425
+    },
+    "trellis_sc": {
+      "n_cw": 500.0,
+      "errs_u": 14.0,
+      "errs_v": 14.0,
+      "errs_total": 14.0,
+      "bler_u": 0.028,
+      "bler_v": 0.028,
+      "bler_total": 0.028
+    },
+    "stage1_iters": 40000,
+    "stage2_iters": 40000,
+    "stage1_time_min": 17.402671416600544,
+    "stage2_time_min": 17.486979099114738,
+    "s1_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/isi_mac_bigru_L1_s1_N64_best.pt",
+    "s2_ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/class_c_npd/results/npd_memory_mac/isi_mac_bigru_L1_s2_N64_best.pt"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "64": {
+    "channel": "maagn",
+    "sigma2": 0.251188643150958,
+    "alpha": 0.3,
+    "N": 64,
+    "ku": 15,
+    "kv": 29,
+    "d": 16,
+    "hidden": 100,
+    "stage1_best_bler": 0.03333333333333333,
+    "stage2_best_bler_true_x": 0.0,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 173.0,
+      "errs_v": 176.0,
+      "errs_total": 177.0,
+      "bler_u": 0.0346,
+      "bler_v": 0.0352,
+      "bler_total": 0.0354
+    },
+    "memoryless_sc": {
+      "n_cw": 3000.0,
+      "errs_u": 75.0,
+      "errs_v": 75.0,
+      "errs_total": 75.0,
+      "bler_u": 0.025,
+      "bler_v": 0.025,
+      "bler_total": 0.025
+    },
+    "s1_time_min": 83.98257926702499,
+    "s2_time_min": 37.80037410259247
+  },
+  "128": {
+    "channel": "maagn",
+    "sigma2": 0.251188643150958,
+    "alpha": 0.3,
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "d": 16,
+    "hidden": 100,
+    "stage1_best_bler": 0.07,
+    "stage2_best_bler_true_x": 0.0,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 519.0,
+      "errs_v": 487.0,
+      "errs_total": 524.0,
+      "bler_u": 0.1038,
+      "bler_v": 0.0974,
+      "bler_total": 0.1048
+    },
+    "memoryless_sc": {
+      "n_cw": 3000.0,
+      "errs_u": 23.0,
+      "errs_v": 14.0,
+      "errs_total": 23.0,
+      "bler_u": 0.007666666666666666,
+      "bler_v": 0.004666666666666667,
+      "bler_total": 0.007666666666666666
+    },
+    "s1_time_min": 107.28175783157349,
+    "s2_time_min": 35.13524909814199
+  },
+  "256": {
+    "channel": "maagn",
+    "sigma2": 0.251188643150958,
+    "alpha": 0.3,
+    "N": 256,
+    "ku": 59,
+    "kv": 117,
+    "d": 16,
+    "hidden": 100,
+    "stage1_best_bler": 0.013333333333333334,
+    "stage2_best_bler_true_x": 0.0,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 108.0,
+      "errs_v": 109.0,
+      "errs_total": 109.0,
+      "bler_u": 0.0216,
+      "bler_v": 0.0218,
+      "bler_total": 0.0218
+    },
+    "chained_ci": [
+      0.018104316188142542,
+      0.026229940915439637
+    ],
+    "s1_time_min": 443.9781421383222,
+    "s2_time_min": 73.4697920481364,
+    "total_time_min": 518.2469464341799
+  }
+}

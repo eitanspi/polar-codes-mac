@@ -1,0 +1,19 @@
+{
+  "model": "overnight_gpu_d64_h128_N512",
+  "checkpoint": "overnight_250k.pt",
+  "N": 512,
+  "ku": 119,
+  "kv": 233,
+  "d": 64,
+  "hidden": 128,
+  "channel": "isi_mac",
+  "snr_db": 6.0,
+  "n_cw": 2000,
+  "errs": 1152,
+  "bler": 0.576,
+  "ci_low": 0.5542157372425242,
+  "ci_high": 0.5974928608821978,
+  "previous_best": 0.108,
+  "time_sec": 20.305997848510742,
+  "iter": "unknown"
+}

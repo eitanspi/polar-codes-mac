@@ -1,0 +1,122 @@
+{
+  "16": {
+    "N": 16,
+    "ku": 4,
+    "kv": 7,
+    "p_flip": 0.001,
+    "trellis_sc": {
+      "chained_bler": 0.1727,
+      "u_err_rate": 0.1684,
+      "v_err_rate": 0.1723,
+      "n_cw": 10000,
+      "errs_u": 1684,
+      "errs_v": 1723,
+      "errs_total": 1727,
+      "time_min": 0.3
+    },
+    "memoryless_sc": {
+      "bler": 0.1756,
+      "errs_total": 1756,
+      "errs_u": 1713,
+      "errs_v": 1756,
+      "n_cw": 10000,
+      "time_min": 0.1
+    }
+  },
+  "32": {
+    "N": 32,
+    "ku": 7,
+    "kv": 15,
+    "p_flip": 0.001,
+    "trellis_sc": {
+      "chained_bler": 0.0926,
+      "u_err_rate": 0.0886,
+      "v_err_rate": 0.0915,
+      "n_cw": 10000,
+      "errs_u": 886,
+      "errs_v": 915,
+      "errs_total": 926,
+      "time_min": 0.6
+    },
+    "memoryless_sc": {
+      "bler": 0.0958,
+      "errs_total": 958,
+      "errs_u": 902,
+      "errs_v": 950,
+      "n_cw": 10000,
+      "time_min": 0.2
+    }
+  },
+  "64": {
+    "N": 64,
+    "ku": 15,
+    "kv": 29,
+    "p_flip": 0.001,
+    "trellis_sc": {
+      "chained_bler": 0.072,
+      "u_err_rate": 0.07,
+      "v_err_rate": 0.0681,
+      "n_cw": 10000,
+      "errs_u": 700,
+      "errs_v": 681,
+      "errs_total": 720,
+      "time_min": 1.2
+    },
+    "memoryless_sc": {
+      "bler": 0.0757,
+      "errs_total": 757,
+      "errs_u": 697,
+      "errs_v": 740,
+      "n_cw": 10000,
+      "time_min": 0.5
+    }
+  },
+  "128": {
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "p_flip": 0.001,
+    "trellis_sc": {
+      "chained_bler": 0.1056,
+      "u_err_rate": 0.1054,
+      "v_err_rate": 0.0788,
+      "n_cw": 5000,
+      "errs_u": 527,
+      "errs_v": 394,
+      "errs_total": 528,
+      "time_min": 1.3
+    },
+    "memoryless_sc": {
+      "bler": 0.108,
+      "errs_total": 540,
+      "errs_u": 535,
+      "errs_v": 452,
+      "n_cw": 5000,
+      "time_min": 0.6
+    }
+  },
+  "256": {
+    "N": 256,
+    "ku": 59,
+    "kv": 117,
+    "p_flip": 0.001,
+    "trellis_sc": {
+      "chained_bler": 0.1888,
+      "u_err_rate": 0.1878,
+      "v_err_rate": 0.1408,
+      "n_cw": 5000,
+      "errs_u": 939,
+      "errs_v": 704,
+      "errs_total": 944,
+      "time_min": 2.6
+    },
+    "memoryless_sc": {
+      "bler": 0.1896,
+      "errs_total": 948,
+      "errs_u": 924,
+      "errs_v": 785,
+      "n_cw": 5000,
+      "time_min": 1.2
+    }
+  }
+}

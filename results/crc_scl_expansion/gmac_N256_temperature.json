@@ -1,0 +1,85 @@
+{
+  "N": 256,
+  "ku": 123,
+  "kv": 123,
+  "snr_db": 6.0,
+  "n_cw_per_T": 1000,
+  "batch_size": 25,
+  "ncg_sc_T0.5": {
+    "bler": 0.025,
+    "n_cw": 1000,
+    "time_s": 9.7
+  },
+  "ncg_sc_T0.7": {
+    "bler": 0.022,
+    "n_cw": 1000,
+    "time_s": 9.8
+  },
+  "ncg_sc_T1.0": {
+    "bler": 0.019,
+    "n_cw": 1000,
+    "time_s": 9.6
+  },
+  "ncg_sc_T1.2": {
+    "bler": 0.024,
+    "n_cw": 1000,
+    "time_s": 9.8
+  },
+  "ncg_sc_T1.5": {
+    "bler": 0.017,
+    "n_cw": 1000,
+    "time_s": 10.0
+  },
+  "ncg_sc_T2.0": {
+    "bler": 0.025,
+    "n_cw": 1000,
+    "time_s": 10.5
+  },
+  "ncg_sc_T3.0": {
+    "bler": 0.013,
+    "n_cw": 1000,
+    "time_s": 10.0
+  },
+  "ncg_sc_T2.5_v2": {
+    "bler": 0.0284,
+    "n_cw": 5000,
+    "time_s": 50.1,
+    "batch_size": 25
+  },
+  "ncg_sc_T3.0_v2": {
+    "bler": 0.0252,
+    "n_cw": 5000,
+    "time_s": 50.1,
+    "batch_size": 25
+  },
+  "ncg_sc_T4.0_v2": {
+    "bler": 0.025,
+    "n_cw": 5000,
+    "time_s": 49.8,
+    "batch_size": 25
+  },
+  "ncg_sc_T5.0_v2": {
+    "bler": 0.0266,
+    "n_cw": 5000,
+    "time_s": 49.5,
+    "batch_size": 25
+  },
+  "ncg_sc_T7.0_v2": {
+    "bler": 0.0252,
+    "n_cw": 5000,
+    "time_s": 49.9,
+    "batch_size": 25
+  },
+  "ncg_sc_T10.0_v2": {
+    "bler": 0.0234,
+    "n_cw": 5000,
+    "time_s": 49.6,
+    "batch_size": 25
+  },
+  "ncg_sc_T1.0_v2": {
+    "bler": 0.025,
+    "n_cw": 5000,
+    "time_s": 50.4,
+    "batch_size": 25
+  }
+}

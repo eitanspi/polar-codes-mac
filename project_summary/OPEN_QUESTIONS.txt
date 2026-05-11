@@ -1,0 +1,110 @@
+OPEN QUESTIONS — Things we can't fully explain yet
+===================================================
+
+
+1. Neural decoder beats analytical SC on same frozen set
+-----------------------------------------------------------
+
+Cases where NN BLER < SC BLER using the SAME code design:
+
+  BEMAC Class B:
+    N=64:   NCG=0.003  SC=0.006  (0.54x)
+    N=128:  NCG=0.001  SC=0.002  (0.60x)
+    N=256:  NCG=4e-5   SC=8e-5   (0.50x)
+
+  GMAC Class B:
+    N=32:   NCG=0.040  SC=0.047  (0.87x)
+
+  GMAC Class C (with NPD-optimal frozen set):
+    N=256:  NPD=0.000  SC=0.001
+
+Why is this surprising:
+  - SC with exact f/g is the optimal decoder for the polar code tree
+  - BEMAC is deterministic (Z=X+Y), no noise — SC should be exact
+  - The NCG uses the same frozen set, same path, same channel
+  - Yet it has half the block error rate
+
+Possible explanations (none confirmed):
+  - NCG uses d=16 embeddings vs scalar LLRs — richer representation
+  - NCG might capture inter-position correlations that scalar SC misses
+  - SC frozen set design (from MC simulation) might be slightly suboptimal,
+    and NCG is more robust to suboptimal position choices
+  - The SC evaluation might use fewer MC trials for design than needed
+
+NOTE: For GMAC Class C, this has been partially resolved — see item 4.
+The NPD operates at a lower rate AND has a ~2x better decoder at equal rate.
+For BEMAC Class B, the comparison IS at the same rate and same positions,
+so the NCG genuinely beats SC as a decoder. This remains unexplained.
+
+
+2. GMAC Class B wall at N=256
+-------------------------------
+
+NCG matches SC up to N=128 but degrades to 4.5x SC at N=256.
+MI under teacher forcing is 0.99 at every position.
+The problem is autoregressive error cascade at inference, not per-position learning.
+
+Why we can't explain it:
+  - BEMAC has no wall (works to N=1024) — what's different about GMAC?
+  - We say "Gaussian noise makes softer posteriors" but haven't quantified this
+  - Unclear if this is fundamental or just needs more training / better architecture
+
+
+3. ABNMAC Class B non-monotonic BLER
+--------------------------------------
+
+SC BLER: N=16: 0.078, N=32: 0.125 (goes UP), N=64: 0.092
+
+Why it's odd:
+  - Polar codes should polarize better with N — BLER should decrease
+  - Might be a rate selection issue (same ku/kv formula for all N)
+  - Or the MC design at N=32 happened to be unlucky
+
+
+4. Why NPD beats SC — RESOLVED
+----------------------------------
+
+The original comparison (NPD=0.038 vs SC=0.068 at N=32) is NOT apples-to-apples.
+SC operates at rate 0.969 (ku=7, kv=24), NPD at rate 0.688 (ku=7, kv=15).
+The NPD freezes many more V-positions, making it a lower-rate code.
+
+Fair comparison at equal rate (ku=7, kv=15 for both):
+  N=16: SC=0.174, NPD=0.107  (NPD 1.6x better)
+  N=32: SC=0.072, NPD=0.038  (NPD 1.9x better)
+  N=64: SC=0.020, NPD=0.008  (NPD 2.7x better)
+
+So the NPD decoder IS genuinely better (~2x at equal rate), but the headline
+number (0.56x SC) also benefits from a lower rate. Both effects contribute.
+
+The NPD selects positions that SC considers bad (Pe=0.30) but decodes them fine.
+This suggests the d=16 embedding representation can handle positions that
+scalar LLR SC cannot.
+
+
+5. NPD selects different positions than SC
+--------------------------------------------
+
+At N=256 GMAC Class C: only 43/59 positions overlap between NPD and SC designs.
+SC with NPD positions: BLER=0.893 (terrible).
+NPD with NPD positions: BLER=0.000.
+
+Why this matters:
+  - The 16 positions NPD selects that SC doesn't — what's special about them?
+  - Are these positions where the d-dimensional embedding helps?
+  - Can we characterize which positions the NPD prefers?
+
+
+6. ISI-MAC NPD: low training loss but high inference BLER
+-----------------------------------------------------------
+
+NPD on ISI-MAC Class C at N=16-64:
+  fast_ce loss converges to 0.08-0.19 (good)
+  But inference BLER stays at 0.74-0.98 (bad)
+
+The model learns well under teacher forcing but fails at sequential decode.
+This is the same error cascade problem as GMAC Class B, but amplified by
+channel memory — errors in early positions affect the ISI state, corrupting
+later positions more than in a memoryless channel.
+
+The NPD paper handles memory channels with trellis-based tree operations,
+not standard fast_ce. We may need to adapt their approach for MAC.

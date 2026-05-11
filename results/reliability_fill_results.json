@@ -1,0 +1,38 @@
+{
+  "bemac_B_N16_SC": {
+    "bler": 0.0122,
+    "errs": 122,
+    "n_cw": 10000,
+    "time_min": 0.0
+  },
+  "bemac_B_N16_NCG": {
+    "bler": 0.0108,
+    "errs": 108,
+    "n_cw": 10000,
+    "time_min": 0.1
+  },
+  "gmac_C_N128_SC": {
+    "bler": 0.008,
+    "errs": 40,
+    "n_cw": 5000,
+    "time_min": 0.5
+  },
+  "bemac_B_N128_SC": {
+    "bler": 0.00125,
+    "errs": 25,
+    "n_cw": 20000,
+    "time_min": 0.1
+  },
+  "maagn_N128_SC": {
+    "bler": 0.0064,
+    "errs": 96,
+    "n_cw": 15000,
+    "time_min": 1.8
+  },
+  "gmac_B_N256_SC": {
+    "bler": 0.00515,
+    "errs": 103,
+    "n_cw": 20000,
+    "time_min": 0.8
+  }
+}

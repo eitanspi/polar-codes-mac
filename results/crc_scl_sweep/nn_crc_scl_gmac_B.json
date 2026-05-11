@@ -1,0 +1,62 @@
+{
+  "32": {
+    "N": 32,
+    "ku": 15,
+    "kv": 15,
+    "channel": "gmac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.032,
+    "nn_scl_l4_errs": 48,
+    "nn_scl_l4_cw": 1500,
+    "nn_scl_l4_time": 51.7,
+    "nn_crc_scl_l4_bler": 0.004,
+    "nn_crc_scl_l4_errs": 6,
+    "nn_crc_scl_l4_cw": 1500,
+    "nn_crc_scl_l4_time": 54.3
+  },
+  "64": {
+    "N": 64,
+    "ku": 31,
+    "kv": 31,
+    "channel": "gmac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.018,
+    "nn_scl_l4_errs": 18,
+    "nn_scl_l4_cw": 1000,
+    "nn_scl_l4_time": 89.0,
+    "nn_crc_scl_l4_bler": 0.004,
+    "nn_crc_scl_l4_errs": 4,
+    "nn_crc_scl_l4_cw": 1000,
+    "nn_crc_scl_l4_time": 92.9
+  },
+  "128": {
+    "N": 128,
+    "ku": 62,
+    "kv": 62,
+    "channel": "gmac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.006,
+    "nn_scl_l4_errs": 3,
+    "nn_scl_l4_cw": 500,
+    "nn_scl_l4_time": 123.6,
+    "nn_crc_scl_l4_bler": 0.006,
+    "nn_crc_scl_l4_errs": 3,
+    "nn_crc_scl_l4_cw": 500,
+    "nn_crc_scl_l4_time": 127.7
+  },
+  "256": {
+    "N": 256,
+    "ku": 123,
+    "kv": 123,
+    "channel": "gmac",
+    "class": "B",
+    "nn_scl_l4_bler": 0.02,
+    "nn_scl_l4_errs": 6,
+    "nn_scl_l4_cw": 300,
+    "nn_scl_l4_time": 229.1,
+    "nn_crc_scl_l4_bler": 0.013333333333333334,
+    "nn_crc_scl_l4_errs": 4,
+    "nn_crc_scl_l4_cw": 300,
+    "nn_crc_scl_l4_time": 232.7
+  }
+}

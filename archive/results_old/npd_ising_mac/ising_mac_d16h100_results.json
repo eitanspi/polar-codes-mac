@@ -1,0 +1,120 @@
+{
+  "16": {
+    "channel": "ising_mac",
+    "sigma2": 0.251,
+    "p_flip": 0.1,
+    "N": 16,
+    "ku": 4,
+    "kv": 7,
+    "d": 16,
+    "hidden": 100,
+    "stage1_best_bler": 0.3466666666666667,
+    "stage2_best_bler_true_x": 0.44666666666666666,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 1886.0,
+      "errs_v": 2893.0,
+      "errs_total": 2960.0,
+      "bler_u": 0.3772,
+      "bler_v": 0.5786,
+      "bler_total": 0.592
+    },
+    "memoryless_sc": {
+      "n_cw": 3000.0,
+      "errs_u": 1123.0,
+      "errs_v": 1883.0,
+      "errs_total": 1902.0,
+      "bler_u": 0.37433333333333335,
+      "bler_v": 0.6276666666666667,
+      "bler_total": 0.634
+    },
+    "s1_time_min": 29.66506363550822,
+    "s2_time_min": 16.611118380228678
+  },
+  "32": {
+    "channel": "ising_mac",
+    "sigma2": 0.251,
+    "p_flip": 0.1,
+    "N": 32,
+    "ku": 7,
+    "kv": 15,
+    "d": 16,
+    "hidden": 100,
+    "stage1_best_bler": 0.5733333333333334,
+    "stage2_best_bler_true_x": 0.6733333333333333,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 2813.0,
+      "errs_v": 3691.0,
+      "errs_total": 3850.0,
+      "bler_u": 0.5626,
+      "bler_v": 0.7382,
+      "bler_total": 0.77
+    },
+    "memoryless_sc": {
+      "n_cw": 3000.0,
+      "errs_u": 1422.0,
+      "errs_v": 2303.0,
+      "errs_total": 2342.0,
+      "bler_u": 0.474,
+      "bler_v": 0.7676666666666667,
+      "bler_total": 0.7806666666666666
+    },
+    "s1_time_min": 42.7342024842898,
+    "s2_time_min": 22.26725741624832
+  },
+  "128": {
+    "channel": "ising_mac",
+    "sigma2": 0.251,
+    "p_flip": 0.1,
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "d": 16,
+    "hidden": 100,
+    "stage1_best_bler": 0.98,
+    "stage2_best_bler_true_x": 0.96,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 4942.0,
+      "errs_v": 4936.0,
+      "errs_total": 4985.0,
+      "bler_u": 0.9884,
+      "bler_v": 0.9872,
+      "bler_total": 0.997
+    },
+    "chained_ci": [
+      0.9950557896299472,
+      0.9981810866132976
+    ],
+    "s1_time_min": 463.4328923980395,
+    "s2_time_min": 45.870500985781355
+  },
+  "256": {
+    "channel": "ising_mac",
+    "sigma2": 0.251,
+    "p_flip": 0.1,
+    "N": 256,
+    "ku": 59,
+    "kv": 117,
+    "d": 16,
+    "hidden": 100,
+    "stage1_best_bler": 0.9966666666666667,
+    "stage2_best_bler_true_x": 0.99,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 4988.0,
+      "errs_v": 4998.0,
+      "errs_total": 4998.0,
+      "bler_u": 0.9976,
+      "bler_v": 0.9996,
+      "bler_total": 0.9996
+    },
+    "chained_ci": [
+      0.9985425830322826,
+      0.9998903010142469
+    ],
+    "s1_time_min": 418.8465322335561,
+    "s2_time_min": 144.74325676759085
+  }
+}

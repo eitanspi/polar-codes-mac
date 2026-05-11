@@ -1,0 +1,46 @@
+{
+  "64": {
+    "N": 64,
+    "ku": 15,
+    "kv": 29,
+    "trellis_sc": {
+      "chained_bler": 0.893,
+      "u_err_rate": 0.6644,
+      "v_err_rate": 0.8846,
+      "n_cw": 5000,
+      "errs_u": 3322,
+      "errs_v": 4423,
+      "errs_total": 4465
+    },
+    "memoryless_sc": {
+      "bler": 0.9424,
+      "errs_total": 4712,
+      "errs_u": 3343,
+      "errs_v": 4703,
+      "n_cw": 5000,
+      "time_min": 0.27611039876937865
+    }
+  },
+  "128": {
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "trellis_sc": {
+      "chained_bler": 0.9824,
+      "u_err_rate": 0.8966,
+      "v_err_rate": 0.9658,
+      "n_cw": 5000,
+      "errs_u": 4483,
+      "errs_v": 4829,
+      "errs_total": 4912
+    },
+    "memoryless_sc": {
+      "bler": 0.9946,
+      "errs_total": 4973,
+      "errs_u": 4461,
+      "errs_v": 4964,
+      "n_cw": 5000,
+      "time_min": 0.6362194816271464
+    }
+  }
+}

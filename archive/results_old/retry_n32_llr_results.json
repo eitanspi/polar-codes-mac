@@ -1,0 +1,12 @@
+{
+  "N": 32,
+  "sc_bler": 0.0684,
+  "target": 0.103,
+  "experiment": "stage1_analytical_llr_input",
+  "stage1_best_bler_500cw": 0.112,
+  "stage1_best_iter": 24000,
+  "stage1_final_bler_5000cw": 0.1142,
+  "stage1_ci_low": 0.10567859138905673,
+  "stage1_ci_high": 0.12331378918510054,
+  "elapsed_min": 7.805731280644735
+}

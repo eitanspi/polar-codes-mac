@@ -1,0 +1,32 @@
+{
+  "16": {
+    "channel": "bemac",
+    "N": 16,
+    "ku": 4,
+    "kv": 8,
+    "stage1_bler": 0.926,
+    "stage1_time_min": 1.0158314863840738,
+    "stage2_bler": 0.996,
+    "stage2_time_min": 0.2771283984184265,
+    "chained_bler": 0.9995,
+    "chained_ci_low": 0.9971730649772383,
+    "chained_ci_high": 0.9999117345398496,
+    "chained_errs_u": 1855,
+    "chained_errs_v": 1994
+  },
+  "32": {
+    "channel": "bemac",
+    "N": 32,
+    "ku": 8,
+    "kv": 16,
+    "stage1_bler": 0.998,
+    "stage1_time_min": 2.7267015178998313,
+    "stage2_bler": 1.0,
+    "stage2_time_min": 0.6874846498171489,
+    "chained_bler": 0.997,
+    "chained_ci_low": 0.9934699962513178,
+    "chained_ci_high": 0.9986243888537725,
+    "chained_errs_u": 1994,
+    "chained_errs_v": 1910
+  }
+}

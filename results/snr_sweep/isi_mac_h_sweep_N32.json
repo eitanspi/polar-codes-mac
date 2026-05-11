@@ -1,0 +1,177 @@
+{
+  "config": {
+    "N": 32,
+    "n_log": 5,
+    "snr_db": 6.0,
+    "h_list": [
+      0.2,
+      0.3,
+      0.5,
+      0.7
+    ],
+    "n_cw": 1000,
+    "channel": "ISIMAC h-sweep, SNR=6 dB",
+    "npd_training_h": 0.3,
+    "note": "NPD BiGRU was trained at h=0.3 only; other h values test generalization.",
+    "Au": [
+      16,
+      24,
+      28,
+      29,
+      30,
+      31,
+      32
+    ],
+    "Av": [
+      12,
+      14,
+      15,
+      16,
+      20,
+      22,
+      23,
+      24,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32
+    ],
+    "ku": 7,
+    "kv": 15,
+    "npd_s1_ckpt": "isi_mac_bigru_L1_s1_N32_best.pt",
+    "npd_s2_ckpt": "isi_mac_bigru_L1_s2_N32_best.pt"
+  },
+  "results": {
+    "h=0.2": {
+      "chained_npd_bigru": {
+        "bler": 0.126,
+        "errs_total": 126,
+        "errs_u": 125,
+        "errs_v": 120,
+        "n_cw": 1000,
+        "time_s": 1.26,
+        "ci_lo": 0.10685258457167218,
+        "ci_hi": 0.14800993557094794
+      },
+      "chained_trellis_sc": {
+        "bler": 0.067,
+        "errs_total": 67,
+        "errs_u": 67,
+        "errs_v": 67,
+        "n_cw": 1000,
+        "time_s": 2.42,
+        "ci_lo": 0.05310169229975138,
+        "ci_hi": 0.08421240187606284
+      },
+      "memoryless_sc": {
+        "bler": 0.076,
+        "errs_total": 76,
+        "errs_u": 76,
+        "errs_v": 76,
+        "n_cw": 1000,
+        "time_s": 1.42,
+        "ci_lo": 0.061149203004722485,
+        "ci_hi": 0.0940960069965367
+      }
+    },
+    "h=0.3": {
+      "chained_npd_bigru": {
+        "bler": 0.118,
+        "errs_total": 118,
+        "errs_u": 118,
+        "errs_v": 111,
+        "n_cw": 1000,
+        "time_s": 1.24,
+        "ci_lo": 0.0994512436719432,
+        "ci_hi": 0.13947250684805915
+      },
+      "chained_trellis_sc": {
+        "bler": 0.087,
+        "errs_total": 87,
+        "errs_u": 87,
+        "errs_v": 86,
+        "n_cw": 1000,
+        "time_s": 2.4,
+        "ci_lo": 0.07107415624980785,
+        "ci_hi": 0.10608686198255073
+      },
+      "memoryless_sc": {
+        "bler": 0.097,
+        "errs_total": 97,
+        "errs_u": 91,
+        "errs_v": 96,
+        "n_cw": 1000,
+        "time_s": 1.41,
+        "ci_lo": 0.08016887955855043,
+        "ci_hi": 0.11691560070208037
+      }
+    },
+    "h=0.5": {
+      "chained_npd_bigru": {
+        "bler": 0.191,
+        "errs_total": 191,
+        "errs_u": 178,
+        "errs_v": 172,
+        "n_cw": 1000,
+        "time_s": 1.22,
+        "ci_lo": 0.16783652890414247,
+        "ci_hi": 0.21652849442224692
+      },
+      "chained_trellis_sc": {
+        "bler": 0.175,
+        "errs_total": 175,
+        "errs_u": 174,
+        "errs_v": 170,
+        "n_cw": 1000,
+        "time_s": 2.42,
+        "ci_lo": 0.1527053610921423,
+        "ci_hi": 0.19978212298901157
+      },
+      "memoryless_sc": {
+        "bler": 0.477,
+        "errs_total": 477,
+        "errs_u": 315,
+        "errs_v": 454,
+        "n_cw": 1000,
+        "time_s": 1.41,
+        "ci_lo": 0.44618966977096414,
+        "ci_hi": 0.5079863675640099
+      }
+    },
+    "h=0.7": {
+      "chained_npd_bigru": {
+        "bler": 0.373,
+        "errs_total": 373,
+        "errs_u": 245,
+        "errs_v": 346,
+        "n_cw": 1000,
+        "time_s": 1.21,
+        "ci_lo": 0.3435655079201235,
+        "ci_hi": 0.4034065243208197
+      },
+      "chained_trellis_sc": {
+        "bler": 0.293,
+        "errs_total": 293,
+        "errs_u": 291,
+        "errs_v": 288,
+        "n_cw": 1000,
+        "time_s": 2.43,
+        "ci_lo": 0.2656252832094272,
+        "ci_hi": 0.3219590528053385
+      },
+      "memoryless_sc": {
+        "bler": 0.815,
+        "errs_total": 815,
+        "errs_u": 467,
+        "errs_v": 778,
+        "n_cw": 1000,
+        "time_s": 1.4,
+        "ci_lo": 0.7897434604481715,
+        "ci_hi": 0.8378455934424025
+      }
+    }
+  }
+}

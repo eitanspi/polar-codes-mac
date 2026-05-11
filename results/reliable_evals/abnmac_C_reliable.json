@@ -1,0 +1,32 @@
+[
+  {
+    "channel": "ABNMAC",
+    "class": "C",
+    "N": 32,
+    "decoder": "SC",
+    "ku": 6,
+    "kv": 13,
+    "bler": 0.0334,
+    "n_cw": 5000,
+    "n_errors": 167,
+    "ci_lo": 0.02876682416077008,
+    "ci_hi": 0.03874962160362023,
+    "elapsed_s": 21.7,
+    "reliable": true
+  },
+  {
+    "channel": "ABNMAC",
+    "class": "C",
+    "N": 64,
+    "decoder": "SC",
+    "ku": 13,
+    "kv": 26,
+    "bler": 0.0478,
+    "n_cw": 5000,
+    "n_errors": 239,
+    "ci_lo": 0.042225690947536774,
+    "ci_hi": 0.054068644188891214,
+    "elapsed_s": 44.5,
+    "reliable": true
+  }
+]

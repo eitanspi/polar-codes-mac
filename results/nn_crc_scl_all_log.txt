@@ -1,0 +1,331 @@
+======================================================================
+  NN-CRC-SCL L=4 Evaluation — All Channels
+======================================================================
+
+
+######################################################################
+  GMAC Class B
+######################################################################
+
+======================================================================
+  GMAC Class B N=32 ku=15 kv=15
+  Checkpoint: ncg_gmac_mlp_N32.pt
+  CRC positions: [25, 26, 27]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (1500 CW)...
+    [100/1500] errs=3 BLER=0.0300 [3s, 0.0s/cw]
+    [200/1500] errs=5 BLER=0.0250 [7s, 0.0s/cw]
+    [300/1500] errs=13 BLER=0.0433 [10s, 0.0s/cw]
+    [400/1500] errs=17 BLER=0.0425 [14s, 0.0s/cw]
+    [500/1500] errs=19 BLER=0.0380 [17s, 0.0s/cw]
+    [600/1500] errs=19 BLER=0.0317 [21s, 0.0s/cw]
+    [700/1500] errs=22 BLER=0.0314 [24s, 0.0s/cw]
+    [800/1500] errs=26 BLER=0.0325 [28s, 0.0s/cw]
+    [900/1500] errs=32 BLER=0.0356 [31s, 0.0s/cw]
+    [1000/1500] errs=37 BLER=0.0370 [34s, 0.0s/cw]
+    [1100/1500] errs=37 BLER=0.0336 [38s, 0.0s/cw]
+    [1200/1500] errs=42 BLER=0.0350 [41s, 0.0s/cw]
+    [1300/1500] errs=43 BLER=0.0331 [45s, 0.0s/cw]
+    [1400/1500] errs=45 BLER=0.0321 [48s, 0.0s/cw]
+    [1500/1500] errs=48 BLER=0.0320 [52s, 0.0s/cw]
+  -> NN-SCL L=4: BLER=0.0320 (48/1500) [52s]
+
+  NN-CA-SCL L=4 (1500 CW)...
+    [100/1500] errs=0 BLER=0.0000 [4s, 0.0s/cw]
+    [200/1500] errs=0 BLER=0.0000 [7s, 0.0s/cw]
+    [300/1500] errs=0 BLER=0.0000 [11s, 0.0s/cw]
+    [400/1500] errs=0 BLER=0.0000 [14s, 0.0s/cw]
+    [500/1500] errs=0 BLER=0.0000 [18s, 0.0s/cw]
+    [600/1500] errs=0 BLER=0.0000 [22s, 0.0s/cw]
+    [700/1500] errs=0 BLER=0.0000 [25s, 0.0s/cw]
+    [800/1500] errs=2 BLER=0.0025 [29s, 0.0s/cw]
+    [900/1500] errs=2 BLER=0.0022 [33s, 0.0s/cw]
+    [1000/1500] errs=2 BLER=0.0020 [36s, 0.0s/cw]
+    [1100/1500] errs=2 BLER=0.0018 [40s, 0.0s/cw]
+    [1200/1500] errs=2 BLER=0.0017 [44s, 0.0s/cw]
+    [1300/1500] errs=4 BLER=0.0031 [47s, 0.0s/cw]
+    [1400/1500] errs=6 BLER=0.0043 [51s, 0.0s/cw]
+    [1500/1500] errs=6 BLER=0.0040 [54s, 0.0s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0040 (6/1500) [54s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_gmac_B.json
+
+======================================================================
+  GMAC Class B N=64 ku=31 kv=31
+  Checkpoint: ncg_gmac_mlp_N64.pt
+  CRC positions: [57, 58, 59]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (1000 CW)...
+    [100/1000] errs=2 BLER=0.0200 [9s, 0.1s/cw]
+    [200/1000] errs=5 BLER=0.0250 [18s, 0.1s/cw]
+    [300/1000] errs=6 BLER=0.0200 [27s, 0.1s/cw]
+    [400/1000] errs=10 BLER=0.0250 [36s, 0.1s/cw]
+    [500/1000] errs=11 BLER=0.0220 [44s, 0.1s/cw]
+    [600/1000] errs=14 BLER=0.0233 [53s, 0.1s/cw]
+    [700/1000] errs=15 BLER=0.0214 [62s, 0.1s/cw]
+    [800/1000] errs=16 BLER=0.0200 [71s, 0.1s/cw]
+    [900/1000] errs=18 BLER=0.0200 [80s, 0.1s/cw]
+    [1000/1000] errs=18 BLER=0.0180 [89s, 0.1s/cw]
+  -> NN-SCL L=4: BLER=0.0180 (18/1000) [89s]
+
+  NN-CA-SCL L=4 (1000 CW)...
+    [100/1000] errs=0 BLER=0.0000 [9s, 0.1s/cw]
+    [200/1000] errs=0 BLER=0.0000 [19s, 0.1s/cw]
+    [300/1000] errs=0 BLER=0.0000 [28s, 0.1s/cw]
+    [400/1000] errs=0 BLER=0.0000 [37s, 0.1s/cw]
+    [500/1000] errs=2 BLER=0.0040 [46s, 0.1s/cw]
+    [600/1000] errs=3 BLER=0.0050 [56s, 0.1s/cw]
+    [700/1000] errs=3 BLER=0.0043 [65s, 0.1s/cw]
+    [800/1000] errs=3 BLER=0.0037 [74s, 0.1s/cw]
+    [900/1000] errs=3 BLER=0.0033 [84s, 0.1s/cw]
+    [1000/1000] errs=4 BLER=0.0040 [93s, 0.1s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0040 (4/1000) [93s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_gmac_B.json
+
+======================================================================
+  GMAC Class B N=128 ku=62 kv=62
+  Checkpoint: ncg_gmac_mlp_N128.pt
+  CRC positions: [121, 122, 123]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (500 CW)...
+    [100/500] errs=0 BLER=0.0000 [25s, 0.2s/cw]
+    [200/500] errs=0 BLER=0.0000 [49s, 0.2s/cw]
+    [300/500] errs=2 BLER=0.0067 [74s, 0.2s/cw]
+    [400/500] errs=3 BLER=0.0075 [99s, 0.2s/cw]
+    [500/500] errs=3 BLER=0.0060 [124s, 0.2s/cw]
+  -> NN-SCL L=4: BLER=0.0060 (3/500) [124s]
+
+  NN-CA-SCL L=4 (500 CW)...
+    [100/500] errs=0 BLER=0.0000 [26s, 0.3s/cw]
+    [200/500] errs=0 BLER=0.0000 [51s, 0.3s/cw]
+    [300/500] errs=2 BLER=0.0067 [77s, 0.3s/cw]
+    [400/500] errs=3 BLER=0.0075 [102s, 0.3s/cw]
+    [500/500] errs=3 BLER=0.0060 [128s, 0.3s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0060 (3/500) [128s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_gmac_B.json
+
+======================================================================
+  GMAC Class B N=256 ku=123 kv=123
+  Checkpoint: ncg_gmac_mlp_N256.pt
+  CRC positions: [249, 250, 251]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (300 CW)...
+    [100/300] errs=0 BLER=0.0000 [76s, 0.8s/cw]
+    [200/300] errs=1 BLER=0.0050 [153s, 0.8s/cw]
+    [300/300] errs=6 BLER=0.0200 [229s, 0.8s/cw]
+  -> NN-SCL L=4: BLER=0.0200 (6/300) [229s]
+
+  NN-CA-SCL L=4 (300 CW)...
+    [100/300] errs=1 BLER=0.0100 [77s, 0.8s/cw]
+    [200/300] errs=2 BLER=0.0100 [155s, 0.8s/cw]
+    [300/300] errs=4 BLER=0.0133 [233s, 0.8s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0133 (4/300) [233s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_gmac_B.json
+
+
+######################################################################
+  BEMAC Class B
+######################################################################
+
+======================================================================
+  BEMAC Class B N=32 ku=16 kv=22
+  Checkpoint: ncg_pure_neural_N32.pt
+  CRC positions: [25, 26, 27]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (1500 CW)...
+    [100/1500] errs=1 BLER=0.0100 [4s, 0.0s/cw]
+    [200/1500] errs=2 BLER=0.0100 [8s, 0.0s/cw]
+    [300/1500] errs=3 BLER=0.0100 [12s, 0.0s/cw]
+    [400/1500] errs=3 BLER=0.0075 [16s, 0.0s/cw]
+    [500/1500] errs=3 BLER=0.0060 [20s, 0.0s/cw]
+    [600/1500] errs=4 BLER=0.0067 [24s, 0.0s/cw]
+    [700/1500] errs=6 BLER=0.0086 [27s, 0.0s/cw]
+    [800/1500] errs=7 BLER=0.0088 [31s, 0.0s/cw]
+    [900/1500] errs=8 BLER=0.0089 [35s, 0.0s/cw]
+    [1000/1500] errs=8 BLER=0.0080 [39s, 0.0s/cw]
+    [1100/1500] errs=8 BLER=0.0073 [43s, 0.0s/cw]
+    [1200/1500] errs=8 BLER=0.0067 [47s, 0.0s/cw]
+    [1300/1500] errs=8 BLER=0.0062 [51s, 0.0s/cw]
+    [1400/1500] errs=8 BLER=0.0057 [54s, 0.0s/cw]
+    [1500/1500] errs=9 BLER=0.0060 [58s, 0.0s/cw]
+  -> NN-SCL L=4: BLER=0.0060 (9/1500) [58s]
+
+  NN-CA-SCL L=4 (1500 CW)...
+    [100/1500] errs=0 BLER=0.0000 [4s, 0.0s/cw]
+    [200/1500] errs=0 BLER=0.0000 [8s, 0.0s/cw]
+    [300/1500] errs=0 BLER=0.0000 [12s, 0.0s/cw]
+    [400/1500] errs=0 BLER=0.0000 [15s, 0.0s/cw]
+    [500/1500] errs=0 BLER=0.0000 [19s, 0.0s/cw]
+    [600/1500] errs=0 BLER=0.0000 [23s, 0.0s/cw]
+    [700/1500] errs=0 BLER=0.0000 [27s, 0.0s/cw]
+    [800/1500] errs=0 BLER=0.0000 [31s, 0.0s/cw]
+    [900/1500] errs=0 BLER=0.0000 [35s, 0.0s/cw]
+    [1000/1500] errs=0 BLER=0.0000 [39s, 0.0s/cw]
+    [1100/1500] errs=0 BLER=0.0000 [43s, 0.0s/cw]
+    [1200/1500] errs=0 BLER=0.0000 [46s, 0.0s/cw]
+    [1300/1500] errs=0 BLER=0.0000 [50s, 0.0s/cw]
+    [1400/1500] errs=0 BLER=0.0000 [54s, 0.0s/cw]
+    [1500/1500] errs=0 BLER=0.0000 [58s, 0.0s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0000 (0/1500) [58s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_bemac_B.json
+
+======================================================================
+  BEMAC Class B N=64 ku=32 kv=44
+  Checkpoint: ncg_pure_neural_N64.pt
+  CRC positions: [57, 58, 59]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (1000 CW)...
+    [100/1000] errs=0 BLER=0.0000 [10s, 0.1s/cw]
+    [200/1000] errs=0 BLER=0.0000 [19s, 0.1s/cw]
+    [300/1000] errs=0 BLER=0.0000 [29s, 0.1s/cw]
+    [400/1000] errs=0 BLER=0.0000 [38s, 0.1s/cw]
+    [500/1000] errs=0 BLER=0.0000 [48s, 0.1s/cw]
+    [600/1000] errs=0 BLER=0.0000 [58s, 0.1s/cw]
+    [700/1000] errs=0 BLER=0.0000 [67s, 0.1s/cw]
+    [800/1000] errs=0 BLER=0.0000 [77s, 0.1s/cw]
+    [900/1000] errs=0 BLER=0.0000 [86s, 0.1s/cw]
+    [1000/1000] errs=0 BLER=0.0000 [96s, 0.1s/cw]
+  -> NN-SCL L=4: BLER=0.0000 (0/1000) [96s]
+
+  NN-CA-SCL L=4 (1000 CW)...
+    [100/1000] errs=0 BLER=0.0000 [10s, 0.1s/cw]
+    [200/1000] errs=0 BLER=0.0000 [19s, 0.1s/cw]
+    [300/1000] errs=0 BLER=0.0000 [29s, 0.1s/cw]
+    [400/1000] errs=0 BLER=0.0000 [38s, 0.1s/cw]
+    [500/1000] errs=0 BLER=0.0000 [48s, 0.1s/cw]
+    [600/1000] errs=0 BLER=0.0000 [58s, 0.1s/cw]
+    [700/1000] errs=0 BLER=0.0000 [67s, 0.1s/cw]
+    [800/1000] errs=0 BLER=0.0000 [77s, 0.1s/cw]
+    [900/1000] errs=0 BLER=0.0000 [86s, 0.1s/cw]
+    [1000/1000] errs=0 BLER=0.0000 [96s, 0.1s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0000 (0/1000) [96s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_bemac_B.json
+
+======================================================================
+  BEMAC Class B N=128 ku=64 kv=89
+  Checkpoint: ncg_pure_neural_N128.pt
+  CRC positions: [120, 121, 122]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (500 CW)...
+    [100/500] errs=0 BLER=0.0000 [27s, 0.3s/cw]
+    [200/500] errs=0 BLER=0.0000 [55s, 0.3s/cw]
+    [300/500] errs=0 BLER=0.0000 [82s, 0.3s/cw]
+    [400/500] errs=0 BLER=0.0000 [110s, 0.3s/cw]
+    [500/500] errs=0 BLER=0.0000 [137s, 0.3s/cw]
+  -> NN-SCL L=4: BLER=0.0000 (0/500) [137s]
+
+  NN-CA-SCL L=4 (500 CW)...
+    [100/500] errs=0 BLER=0.0000 [27s, 0.3s/cw]
+    [200/500] errs=0 BLER=0.0000 [55s, 0.3s/cw]
+    [300/500] errs=0 BLER=0.0000 [82s, 0.3s/cw]
+    [400/500] errs=0 BLER=0.0000 [109s, 0.3s/cw]
+    [500/500] errs=0 BLER=0.0000 [137s, 0.3s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0000 (0/500) [137s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_bemac_B.json
+
+
+######################################################################
+  ABNMAC Class B
+######################################################################
+
+======================================================================
+  ABNMAC Class B N=32 ku=10 kv=10
+  Checkpoint: ncg_abnmac_classB_N32_best.pt
+  CRC positions: [24, 26, 27]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (1500 CW)...
+    [100/1500] errs=2 BLER=0.0200 [3s, 0.0s/cw]
+    [200/1500] errs=6 BLER=0.0300 [6s, 0.0s/cw]
+    [300/1500] errs=9 BLER=0.0300 [9s, 0.0s/cw]
+    [400/1500] errs=10 BLER=0.0250 [12s, 0.0s/cw]
+    [500/1500] errs=14 BLER=0.0280 [15s, 0.0s/cw]
+    [600/1500] errs=14 BLER=0.0233 [18s, 0.0s/cw]
+    [700/1500] errs=15 BLER=0.0214 [21s, 0.0s/cw]
+    [800/1500] errs=19 BLER=0.0238 [24s, 0.0s/cw]
+    [900/1500] errs=22 BLER=0.0244 [27s, 0.0s/cw]
+    [1000/1500] errs=24 BLER=0.0240 [30s, 0.0s/cw]
+    [1100/1500] errs=29 BLER=0.0264 [33s, 0.0s/cw]
+    [1200/1500] errs=33 BLER=0.0275 [36s, 0.0s/cw]
+    [1300/1500] errs=34 BLER=0.0262 [39s, 0.0s/cw]
+    [1400/1500] errs=39 BLER=0.0279 [42s, 0.0s/cw]
+    [1500/1500] errs=43 BLER=0.0287 [45s, 0.0s/cw]
+  -> NN-SCL L=4: BLER=0.0287 (43/1500) [45s]
+
+  NN-CA-SCL L=4 (1500 CW)...
+    [100/1500] errs=1 BLER=0.0100 [3s, 0.0s/cw]
+    [200/1500] errs=1 BLER=0.0050 [6s, 0.0s/cw]
+    [300/1500] errs=1 BLER=0.0033 [9s, 0.0s/cw]
+    [400/1500] errs=3 BLER=0.0075 [12s, 0.0s/cw]
+    [500/1500] errs=3 BLER=0.0060 [15s, 0.0s/cw]
+    [600/1500] errs=5 BLER=0.0083 [18s, 0.0s/cw]
+    [700/1500] errs=6 BLER=0.0086 [21s, 0.0s/cw]
+    [800/1500] errs=7 BLER=0.0088 [24s, 0.0s/cw]
+    [900/1500] errs=9 BLER=0.0100 [27s, 0.0s/cw]
+    [1000/1500] errs=11 BLER=0.0110 [30s, 0.0s/cw]
+    [1100/1500] errs=13 BLER=0.0118 [33s, 0.0s/cw]
+    [1200/1500] errs=16 BLER=0.0133 [36s, 0.0s/cw]
+    [1300/1500] errs=17 BLER=0.0131 [39s, 0.0s/cw]
+    [1400/1500] errs=17 BLER=0.0121 [42s, 0.0s/cw]
+    [1500/1500] errs=18 BLER=0.0120 [45s, 0.0s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0120 (18/1500) [45s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_abnmac_B.json
+
+======================================================================
+  ABNMAC Class B N=64 ku=22 kv=22
+  Checkpoint: ncg_abnmac_classB_N64_best.pt
+  CRC positions: [57, 58, 59]... (8 total)
+======================================================================
+
+  NN-SCL L=4 (1000 CW)...
+    [100/1000] errs=2 BLER=0.0200 [8s, 0.1s/cw]
+    [200/1000] errs=10 BLER=0.0500 [15s, 0.1s/cw]
+    [300/1000] errs=14 BLER=0.0467 [23s, 0.1s/cw]
+    [400/1000] errs=21 BLER=0.0525 [31s, 0.1s/cw]
+    [500/1000] errs=25 BLER=0.0500 [38s, 0.1s/cw]
+    [600/1000] errs=30 BLER=0.0500 [46s, 0.1s/cw]
+    [700/1000] errs=33 BLER=0.0471 [54s, 0.1s/cw]
+    [800/1000] errs=36 BLER=0.0450 [62s, 0.1s/cw]
+    [900/1000] errs=37 BLER=0.0411 [69s, 0.1s/cw]
+    [1000/1000] errs=39 BLER=0.0390 [77s, 0.1s/cw]
+  -> NN-SCL L=4: BLER=0.0390 (39/1000) [77s]
+
+  NN-CA-SCL L=4 (1000 CW)...
+    [100/1000] errs=0 BLER=0.0000 [8s, 0.1s/cw]
+    [200/1000] errs=0 BLER=0.0000 [15s, 0.1s/cw]
+    [300/1000] errs=0 BLER=0.0000 [23s, 0.1s/cw]
+    [400/1000] errs=1 BLER=0.0025 [31s, 0.1s/cw]
+    [500/1000] errs=2 BLER=0.0040 [38s, 0.1s/cw]
+    [600/1000] errs=2 BLER=0.0033 [46s, 0.1s/cw]
+    [700/1000] errs=4 BLER=0.0057 [54s, 0.1s/cw]
+    [800/1000] errs=6 BLER=0.0075 [62s, 0.1s/cw]
+    [900/1000] errs=7 BLER=0.0078 [69s, 0.1s/cw]
+    [1000/1000] errs=9 BLER=0.0090 [77s, 0.1s/cw]
+  -> NN-CA-SCL L=4: BLER=0.0090 (9/1000) [77s]
+  Saved to /Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/results/crc_scl_sweep/nn_crc_scl_abnmac_B.json
+
+
+======================================================================
+  SUMMARY
+======================================================================
+
+  gmac_B:
+    N=128: SCL=0.0060, CRC-SCL=0.0060
+    N=256: SCL=0.0200, CRC-SCL=0.0133
+    N=32: SCL=0.0320, CRC-SCL=0.0040
+    N=64: SCL=0.0180, CRC-SCL=0.0040
+
+  bemac_B:
+    N=128: SCL=0.0000, CRC-SCL=0.0000
+    N=32: SCL=0.0060, CRC-SCL=0.0000
+    N=64: SCL=0.0000, CRC-SCL=0.0000
+
+  abnmac_B:
+    N=32: SCL=0.0287, CRC-SCL=0.0120
+    N=64: SCL=0.0390, CRC-SCL=0.0090

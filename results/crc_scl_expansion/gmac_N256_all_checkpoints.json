@@ -1,0 +1,68 @@
+{
+  "ncg_gmac_mlp_N256.pt": {
+    "bler": 0.015,
+    "n_cw": 1000,
+    "time_s": 16.5
+  },
+  "campaign_n256_sched_best.pt": {
+    "bler": 0.012,
+    "n_cw": 1000,
+    "time_s": 16.4
+  },
+  "campaign_n256_sched_latest.pt": {
+    "bler": 0.013,
+    "n_cw": 1000,
+    "time_s": 16.9
+  },
+  "n256_long_best.pt": {
+    "bler": 0.014,
+    "n_cw": 1000,
+    "time_s": 16.6
+  },
+  "n256_long_latest.pt": {
+    "bler": 0.014,
+    "n_cw": 1000,
+    "time_s": 18.1
+  },
+  "n256_emb_noise_best.pt": {
+    "bler": 1.0,
+    "n_cw": 1000,
+    "time_s": 15.9
+  },
+  "n256_self_play_best.pt": {
+    "bler": 1.0,
+    "n_cw": 1000,
+    "time_s": 15.8
+  },
+  "n256_swap5_best.pt": {
+    "bler": 1.0,
+    "n_cw": 1000,
+    "time_s": 15.8
+  },
+  "n256_tree_transfer_best.pt": {
+    "bler": 1.0,
+    "n_cw": 1000,
+    "time_s": 13.5
+  },
+  "scratch_n256_1500.pt": {
+    "bler": 1.0,
+    "n_cw": 1000,
+    "time_s": 13.5
+  },
+  "multilevel_N256_best.pt": {
+    "bler": 0.039,
+    "n_cw": 1000,
+    "time_s": 14.1
+  },
+  "hybrid_n256_latest.pt": {
+    "bler": 1.0,
+    "n_cw": 1000,
+    "time_s": 13.6
+  },
+  "fastce_n256_best.pt": "state_err: Error(s) in loading state_dict for SimpleMLP_Gmac:\n\tsize mismatch for z_encoder.0.weight: copying a param with shape torch.Size([64, 1]) from checkpoint, the shape in current model is torch.Size([32, 1]).\n\tsize mismatch for z_encoder.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for z_encoder.2.weight: copying a param with shape torch.Size([16, 64]) from checkpoint, the shape in current model is torch.Size([16, 32]).",
+  "ncg_pure_neural_N256.pt": {
+    "bler": 1.0,
+    "n_cw": 1000,
+    "time_s": 13.7
+  }
+}

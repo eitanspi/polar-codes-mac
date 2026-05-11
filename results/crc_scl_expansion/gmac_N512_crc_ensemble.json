@@ -1,0 +1,21 @@
+{
+  "N": 512,
+  "ku": 246,
+  "kv": 246,
+  "n_cw": 1000,
+  "models": [
+    "n512_long_latest.pt",
+    "n512_long_best.pt",
+    "campaign_n512_best.pt"
+  ],
+  "fallback": "n512_long_latest.pt",
+  "per_model_bler": {
+    "n512_long_latest.pt": 0.01,
+    "n512_long_best.pt": 0.011,
+    "campaign_n512_best.pt": 0.012
+  },
+  "ensemble_bler": 0.007,
+  "oracle_bler": 0.007,
+  "no_crc_pass_fraction": 0.007,
+  "time_s": 133.5
+}

@@ -1,0 +1,32 @@
+{
+  "description": "SC reference BLER for GMAC Class C at 50% of per-user capacity",
+  "channel": "gmac",
+  "snr_db": 6.0,
+  "sigma2": 0.2512,
+  "path": "Class C (path_i = N)",
+  "rate_policy": "50% of per-user capacity",
+  "I_X_Z_marginal": 0.4645,
+  "I_Y_ZX_conditional": 0.9119,
+  "target_R_u": 0.2323,
+  "target_R_v": 0.4560,
+  "n_cw_per_point": 5000,
+  "results": {
+    "16":   {"ku": 4,   "kv": 7,   "R_u": 0.2500, "R_v": 0.4375, "sc_bler": 0.1626},
+    "32":   {"ku": 7,   "kv": 15,  "R_u": 0.2188, "R_v": 0.4688, "sc_bler": 0.0684},
+    "64":   {"ku": 15,  "kv": 29,  "R_u": 0.2344, "R_v": 0.4531, "sc_bler": 0.0266},
+    "128":  {"ku": 30,  "kv": 58,  "R_u": 0.2344, "R_v": 0.4531, "sc_bler": 0.0054},
+    "256":  {"ku": 59,  "kv": 117, "R_u": 0.2305, "R_v": 0.4570, "sc_bler": 0.0020},
+    "512":  {"ku": 119, "kv": 233, "R_u": 0.2324, "R_v": 0.4551, "sc_bler": 0.0008},
+    "1024": {"ku": 238, "kv": 467, "R_u": 0.2324, "R_v": 0.4561, "sc_bler": 0.0002}
+  },
+  "targets_for_npd": {
+    "note": "NPD success: BLER <= 1.5x SC at all N",
+    "16":   0.244,
+    "32":   0.103,
+    "64":   0.040,
+    "128":  0.008,
+    "256":  0.003,
+    "512":  0.0012,
+    "1024": 0.0003
+  }
+}

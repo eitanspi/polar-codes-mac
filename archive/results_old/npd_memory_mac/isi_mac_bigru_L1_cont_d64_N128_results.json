@@ -1,0 +1,23 @@
+{
+  "channel": "isi_mac",
+  "N": 128,
+  "ku": 30,
+  "kv": 58,
+  "d": 64,
+  "hidden": 128,
+  "gru_layers": 1,
+  "s1_best_bler": 0.056666666666666664,
+  "pre_s1_bler": 0.07333333333333333,
+  "chained": {
+    "n_cw": 2000.0,
+    "errs_u": 177.0,
+    "errs_v": 165.0,
+    "errs_total": 178.0,
+    "bler_u": 0.0885,
+    "bler_v": 0.0825,
+    "bler_total": 0.089
+  },
+  "s1_time_min": 159.09903796513876,
+  "lr": 0.0001,
+  "iters": 100000
+}

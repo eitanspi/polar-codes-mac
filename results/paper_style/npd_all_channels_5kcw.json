@@ -1,0 +1,418 @@
+{
+  "isi_mac": {
+    "isi_d16_h100_N64": {
+      "N": 64,
+      "ku": 15,
+      "kv": 29,
+      "n_cw": 5000,
+      "errs_u": 155,
+      "errs_v": 159,
+      "errs_total": 159,
+      "bler_u": 0.031,
+      "bler_v": 0.0318,
+      "bler_total": 0.0318,
+      "wilson_95_ci": [
+        0.027284344671871172,
+        0.0370345578289594
+      ],
+      "time_s": 14.55599570274353,
+      "s1_ckpt": "d16_h100_standalone_s1_N64_best.pt",
+      "s2_ckpt": "d16_h100_standalone_s2_N64_best.pt",
+      "d": 16,
+      "hidden": 100,
+      "model_name": "isi_d16_h100"
+    },
+    "isi_d16_h100_N128": {
+      "N": 128,
+      "ku": 30,
+      "kv": 58,
+      "n_cw": 5000,
+      "errs_u": 366,
+      "errs_v": 365,
+      "errs_total": 370,
+      "bler_u": 0.0732,
+      "bler_v": 0.073,
+      "bler_total": 0.074,
+      "wilson_95_ci": [
+        0.06706655005068607,
+        0.08158755602653267
+      ],
+      "time_s": 29.329233169555664,
+      "s1_ckpt": "d16_h100_standalone_s1_N128_best.pt",
+      "s2_ckpt": "d16_h100_standalone_s2_N128_best.pt",
+      "d": 16,
+      "hidden": 100,
+      "model_name": "isi_d16_h100"
+    },
+    "isi_bigru_L1_N16": {
+      "N": 16,
+      "ku": 4,
+      "kv": 7,
+      "n_cw": 5000,
+      "errs_u": 667,
+      "errs_v": 691,
+      "errs_total": 692,
+      "bler_u": 0.1334,
+      "bler_v": 0.1382,
+      "bler_total": 0.1384,
+      "wilson_95_ci": [
+        0.1291054961930908,
+        0.14824972624240756
+      ],
+      "time_s": 2.9722468852996826,
+      "s1_ckpt": "isi_mac_bigru_L1_s1_N16_best.pt",
+      "s2_ckpt": "isi_mac_bigru_L1_s2_N16_best.pt",
+      "d": 16,
+      "hidden": 64,
+      "model_name": "isi_bigru_L1"
+    },
+    "isi_bigru_L1_N32": {
+      "N": 32,
+      "ku": 7,
+      "kv": 15,
+      "n_cw": 5000,
+      "errs_u": 562,
+      "errs_v": 536,
+      "errs_total": 565,
+      "bler_u": 0.1124,
+      "bler_v": 0.1072,
+      "bler_total": 0.113,
+      "wilson_95_ci": [
+        0.10451994603553129,
+        0.12207427709095618
+      ],
+      "time_s": 6.6349570751190186,
+      "s1_ckpt": "isi_mac_bigru_L1_s1_N32_best.pt",
+      "s2_ckpt": "isi_mac_bigru_L1_s2_N32_best.pt",
+      "d": 16,
+      "hidden": 64,
+      "model_name": "isi_bigru_L1"
+    },
+    "isi_bigru_L1_N64": {
+      "N": 64,
+      "ku": 15,
+      "kv": 29,
+      "n_cw": 5000,
+      "errs_u": 203,
+      "errs_v": 212,
+      "errs_total": 212,
+      "bler_u": 0.0406,
+      "bler_v": 0.0424,
+      "bler_total": 0.0424,
+      "wilson_95_ci": [
+        0.037157121292109185,
+        0.04834550532980468
+      ],
+      "time_s": 16.031912803649902,
+      "s1_ckpt": "isi_mac_bigru_L1_s1_N64_best.pt",
+      "s2_ckpt": "isi_mac_bigru_L1_s2_N64_best.pt",
+      "d": 16,
+      "hidden": 64,
+      "model_name": "isi_bigru_L1"
+    },
+    "isi_bigru_L1_N128": {
+      "N": 128,
+      "ku": 30,
+      "kv": 58,
+      "n_cw": 5000,
+      "errs_u": 490,
+      "errs_v": 465,
+      "errs_total": 496,
+      "bler_u": 0.098,
+      "bler_v": 0.093,
+      "bler_total": 0.0992,
+      "wilson_95_ci": [
+        0.09121924698084048,
+        0.10779616549744421
+      ],
+      "time_s": 34.59038805961609,
+      "s1_ckpt": "isi_mac_bigru_L1_s1_N128_best.pt",
+      "s2_ckpt": "isi_mac_bigru_L1_s2_N128_best.pt",
+      "d": 64,
+      "hidden": 128,
+      "model_name": "isi_bigru_L1"
+    },
+    "isi_d64_cont_N128": {
+      "N": 128,
+      "ku": 30,
+      "kv": 58,
+      "n_cw": 5000,
+      "errs_u": 441,
+      "errs_v": 414,
+      "errs_total": 447,
+      "bler_u": 0.0882,
+      "bler_v": 0.0828,
+      "bler_total": 0.0894,
+      "wilson_95_ci": [
+        0.08180331059356481,
+        0.09762714939541643
+      ],
+      "time_s": 33.23609209060669,
+      "s1_ckpt": "isi_mac_bigru_L1_cont_d64_s1_N128_best.pt",
+      "s2_ckpt": "d64_s2_N128_best.pt",
+      "d": 64,
+      "hidden": 128,
+      "model_name": "isi_d64_cont"
+    },
+    "isi_d64_N256": {
+      "N": 256,
+      "ku": 59,
+      "kv": 117,
+      "n_cw": 5000,
+      "errs_u": 47,
+      "errs_v": 60,
+      "errs_total": 60,
+      "bler_u": 0.0094,
+      "bler_v": 0.012,
+      "bler_total": 0.012,
+      "wilson_95_ci": [
+        0.0093,
+        0.0154
+      ],
+      "time_s": 68,
+      "s1_ckpt": "d64_s1_N256_300k.pt",
+      "s2_ckpt": "d64_s2_N256_best.pt",
+      "d": 64,
+      "hidden": 128,
+      "model_name": "isi_d64_N256"
+    },
+    "gpu_curriculum_N128": {
+      "N": 128,
+      "ku": 30,
+      "kv": 58,
+      "n_cw": 5000,
+      "errs_u": 433,
+      "errs_v": 405,
+      "errs_total": 435,
+      "bler_u": 0.0866,
+      "bler_v": 0.081,
+      "bler_total": 0.087,
+      "wilson_95_ci": [
+        0.07950156824075588,
+        0.09513257685288576
+      ],
+      "d": 16,
+      "hidden": 100,
+      "model_name": "gpu_curriculum_d16_h100",
+      "s1_ckpt": "isi_N128_final.pt"
+    },
+    "gpu_curriculum_N16": {
+      "N": 16,
+      "ku": 4,
+      "kv": 7,
+      "n_cw": 5000,
+      "errs_u": 671,
+      "errs_v": 688,
+      "errs_total": 688,
+      "bler_u": 0.1342,
+      "bler_v": 0.1376,
+      "bler_total": 0.1376,
+      "wilson_95_ci": [
+        0.12832934807854926,
+        0.1474271027251692
+      ],
+      "d": 16,
+      "hidden": 100,
+      "model_name": "gpu_curriculum_d16_h100",
+      "s1_ckpt": "isi_N16_final.pt"
+    },
+    "gpu_curriculum_N32": {
+      "N": 32,
+      "ku": 7,
+      "kv": 15,
+      "n_cw": 5000,
+      "errs_u": 280,
+      "errs_v": 275,
+      "errs_total": 283,
+      "bler_u": 0.056,
+      "bler_v": 0.055,
+      "bler_total": 0.0566,
+      "wilson_95_ci": [
+        0.050528708473917106,
+        0.06335211461208946
+      ],
+      "d": 16,
+      "hidden": 100,
+      "model_name": "gpu_curriculum_d16_h100",
+      "s1_ckpt": "isi_N32_final.pt"
+    },
+    "gpu_curriculum_N64": {
+      "N": 64,
+      "ku": 15,
+      "kv": 29,
+      "n_cw": 5000,
+      "errs_u": 139,
+      "errs_v": 139,
+      "errs_total": 139,
+      "bler_u": 0.0278,
+      "bler_v": 0.0278,
+      "bler_total": 0.0278,
+      "wilson_95_ci": [
+        0.023592950244662545,
+        0.03273209409726866
+      ],
+      "d": 16,
+      "hidden": 100,
+      "model_name": "gpu_curriculum_d16_h100",
+      "s1_ckpt": "isi_N64_final.pt"
+    }
+  },
+  "ising_mac": {
+    "ising_d16_h100_N16": {
+      "N": 16,
+      "ku": 4,
+      "kv": 7,
+      "n_cw": 5000,
+      "errs_u": 1900,
+      "errs_v": 2895,
+      "errs_total": 2958,
+      "bler_u": 0.38,
+      "bler_v": 0.579,
+      "bler_total": 0.5916,
+      "wilson_95_ci": [
+        0.5779099918522723,
+        0.605149359986523
+      ],
+      "time_s": 3.303071975708008,
+      "s1_ckpt": "ising_d16_h100_s1_N16_best.pt",
+      "s2_ckpt": "ising_d16_h100_s2_N16_best.pt",
+      "d": 16,
+      "hidden": 100,
+      "model_name": "ising_d16_h100"
+    },
+    "ising_d16_h100_N32": {
+      "N": 32,
+      "ku": 7,
+      "kv": 15,
+      "n_cw": 5000,
+      "errs_u": 2838,
+      "errs_v": 3670,
+      "errs_total": 3829,
+      "bler_u": 0.5676,
+      "bler_v": 0.734,
+      "bler_total": 0.7658,
+      "wilson_95_ci": [
+        0.7538599108242009,
+        0.7773319638346613
+      ],
+      "time_s": 7.293591022491455,
+      "s1_ckpt": "ising_d16_h100_s1_N32_best.pt",
+      "s2_ckpt": "ising_d16_h100_s2_N32_best.pt",
+      "d": 16,
+      "hidden": 100,
+      "model_name": "ising_d16_h100"
+    }
+  },
+  "maagn_mac": {
+    "maagn_bigru_L1_N16": {
+      "N": 16,
+      "ku": 4,
+      "kv": 7,
+      "n_cw": 5000,
+      "errs_u": 702,
+      "errs_v": 715,
+      "errs_total": 719,
+      "bler_u": 0.1404,
+      "bler_v": 0.143,
+      "bler_total": 0.1438,
+      "wilson_95_ci": [
+        0.13434726809041808,
+        0.15379966285959445
+      ],
+      "time_s": 2.960036039352417,
+      "s1_ckpt": "maagn_bigru_L1_s1_N16_best.pt",
+      "s2_ckpt": "maagn_bigru_L1_s2_N16_best.pt",
+      "d": 16,
+      "hidden": 64,
+      "model_name": "maagn_bigru_L1"
+    },
+    "maagn_bigru_L1_N32": {
+      "N": 32,
+      "ku": 7,
+      "kv": 15,
+      "n_cw": 5000,
+      "errs_u": 564,
+      "errs_v": 537,
+      "errs_total": 567,
+      "bler_u": 0.1128,
+      "bler_v": 0.1074,
+      "bler_total": 0.1134,
+      "wilson_95_ci": [
+        0.10490612652647129,
+        0.12248748241590611
+      ],
+      "time_s": 7.9280571937561035,
+      "s1_ckpt": "maagn_bigru_L1_s1_N32_best.pt",
+      "s2_ckpt": "maagn_bigru_L1_s2_N32_best.pt",
+      "d": 32,
+      "hidden": 128,
+      "model_name": "maagn_bigru_L1"
+    },
+    "maagn_bigru_L1_N64": {
+      "N": 64,
+      "ku": 15,
+      "kv": 29,
+      "n_cw": 5000,
+      "errs_u": 280,
+      "errs_v": 282,
+      "errs_total": 283,
+      "bler_u": 0.056,
+      "bler_v": 0.0564,
+      "bler_total": 0.0566,
+      "wilson_95_ci": [
+        0.050528708473917106,
+        0.06335211461208946
+      ],
+      "time_s": 16.24929690361023,
+      "s1_ckpt": "maagn_bigru_L1_s1_N64_best.pt",
+      "s2_ckpt": "maagn_bigru_L1_s2_N64_best.pt",
+      "d": 32,
+      "hidden": 128,
+      "model_name": "maagn_bigru_L1"
+    },
+    "maagn_d16_h100_N64": {
+      "N": 64,
+      "ku": 15,
+      "kv": 29,
+      "n_cw": 5000,
+      "errs_u": 142,
+      "errs_v": 146,
+      "errs_total": 146,
+      "bler_u": 0.0284,
+      "bler_v": 0.0292,
+      "bler_total": 0.0292,
+      "wilson_95_ci": [
+        0.024882369792375313,
+        0.034240524905170676
+      ],
+      "time_s": 15.800007820129395,
+      "s1_ckpt": "maagn_d16_h100_s1_N64_best.pt",
+      "s2_ckpt": "maagn_d16_h100_s2_N64_best.pt",
+      "d": 16,
+      "hidden": 100,
+      "model_name": "maagn_d16_h100"
+    },
+    "maagn_d16_h100_N128": {
+      "N": 128,
+      "ku": 30,
+      "kv": 58,
+      "n_cw": 5000,
+      "errs_u": 505,
+      "errs_v": 479,
+      "errs_total": 507,
+      "bler_u": 0.101,
+      "bler_v": 0.0958,
+      "bler_total": 0.1014,
+      "wilson_95_ci": [
+        0.0933365661198886,
+        0.11007546834579075
+      ],
+      "time_s": 32.63135004043579,
+      "s1_ckpt": "maagn_d16_h100_s1_N128_best.pt",
+      "s2_ckpt": "maagn_d16_h100_s2_N128_best.pt",
+      "d": 16,
+      "hidden": 100,
+      "model_name": "maagn_d16_h100"
+    }
+  }
+}

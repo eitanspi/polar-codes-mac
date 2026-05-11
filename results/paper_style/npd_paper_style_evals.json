@@ -1,0 +1,94 @@
+{
+  "isi_N128_final.pt": {
+    "checkpoint": "isi_N128_final.pt",
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "s1_bler": 0.0988,
+    "s2_best_bler": 0.0,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 433.0,
+      "errs_v": 405.0,
+      "errs_total": 435.0,
+      "bler_u": 0.0866,
+      "bler_v": 0.081,
+      "bler_total": 0.087
+    },
+    "chained_ci": [
+      0.07950156824075588,
+      0.09513257685288576
+    ],
+    "s1_eval_time_min": 0.55175355275472,
+    "s2_train_time_min": 20.395649353663128
+  },
+  "isi_N16_final.pt": {
+    "checkpoint": "isi_N16_final.pt",
+    "N": 16,
+    "ku": 4,
+    "kv": 7,
+    "s1_bler": 0.1288,
+    "s2_best_bler": 0.0,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 671.0,
+      "errs_v": 688.0,
+      "errs_total": 688.0,
+      "bler_u": 0.1342,
+      "bler_v": 0.1376,
+      "bler_total": 0.1376
+    },
+    "chained_ci": [
+      0.12832934807854926,
+      0.1474271027251692
+    ],
+    "s1_eval_time_min": 0.014611419041951497,
+    "s2_train_time_min": 5.482583117485047
+  },
+  "isi_N32_final.pt": {
+    "checkpoint": "isi_N32_final.pt",
+    "N": 32,
+    "ku": 7,
+    "kv": 15,
+    "s1_bler": 0.0552,
+    "s2_best_bler": 0.0,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 280.0,
+      "errs_v": 275.0,
+      "errs_total": 283.0,
+      "bler_u": 0.056,
+      "bler_v": 0.055,
+      "bler_total": 0.0566
+    },
+    "chained_ci": [
+      0.050528708473917106,
+      0.06335211461208946
+    ],
+    "s1_eval_time_min": 0.04375346899032593,
+    "s2_train_time_min": 7.948114017645518
+  },
+  "isi_N64_final.pt": {
+    "checkpoint": "isi_N64_final.pt",
+    "N": 64,
+    "ku": 15,
+    "kv": 29,
+    "s1_bler": 0.03,
+    "s2_best_bler": 0.0033333333333333335,
+    "chained": {
+      "n_cw": 5000.0,
+      "errs_u": 139.0,
+      "errs_v": 139.0,
+      "errs_total": 139.0,
+      "bler_u": 0.0278,
+      "bler_v": 0.0278,
+      "bler_total": 0.0278
+    },
+    "chained_ci": [
+      0.023592950244662545,
+      0.03273209409726866
+    ],
+    "s1_eval_time_min": 0.16333380142847698,
+    "s2_train_time_min": 12.620908919970194
+  }
+}

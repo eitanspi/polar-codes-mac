@@ -1,0 +1,34 @@
+{
+  "N": 256,
+  "ku": 123,
+  "kv": 123,
+  "snr_db": 6.0,
+  "L": 4,
+  "T_1.0": {
+    "bler_crc_scl": 0.0,
+    "n_cw": 100,
+    "time_s": 157.6,
+    "crc_stats": {
+      "crc_pass": 100,
+      "crc_fail": 0
+    }
+  },
+  "T_1.5": {
+    "bler_crc_scl": 0.0,
+    "n_cw": 100,
+    "time_s": 171.0,
+    "crc_stats": {
+      "crc_pass": 100,
+      "crc_fail": 0
+    }
+  },
+  "T_3.0": {
+    "bler_crc_scl": 0.0,
+    "n_cw": 100,
+    "time_s": 179.0,
+    "crc_stats": {
+      "crc_pass": 100,
+      "crc_fail": 0
+    }
+  }
+}

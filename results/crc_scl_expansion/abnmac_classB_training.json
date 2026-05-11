@@ -1,0 +1,62 @@
+{
+  "curriculum": [
+    {
+      "N": 8,
+      "iters": 15000,
+      "ku": 3,
+      "kv": 3
+    },
+    {
+      "N": 16,
+      "iters": 30000,
+      "ku": 5,
+      "kv": 5
+    },
+    {
+      "N": 32,
+      "iters": 80000,
+      "ku": 10,
+      "kv": 10
+    },
+    {
+      "N": 64,
+      "iters": 150000,
+      "ku": 22,
+      "kv": 22
+    }
+  ],
+  "stages": [
+    {
+      "N": 8,
+      "ku": 3,
+      "kv": 3,
+      "iters": 15000,
+      "best_bler": 0.10666666666666667,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/saved_models/ncg_abnmac_classB_N8_best.pt"
+    },
+    {
+      "N": 16,
+      "ku": 5,
+      "kv": 5,
+      "iters": 30000,
+      "best_bler": 0.04,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/saved_models/ncg_abnmac_classB_N16_best.pt"
+    },
+    {
+      "N": 32,
+      "ku": 10,
+      "kv": 10,
+      "iters": 80000,
+      "best_bler": 0.01,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/saved_models/ncg_abnmac_classB_N32_best.pt"
+    },
+    {
+      "N": 64,
+      "ku": 22,
+      "kv": 22,
+      "iters": 150000,
+      "best_bler": 0.023333333333333334,
+      "ckpt": "/Users/ytnspybq/PycharmProjects/polar_codes_MAC/to_git_v2/saved_models/ncg_abnmac_classB_N64_best.pt"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "64": {
+    "n_cw": 5000,
+    "errs_u": 157,
+    "errs_v": 161,
+    "errs_total": 161,
+    "bler_u": 0.0314,
+    "bler_v": 0.0322,
+    "bler_total": 0.0322
+  },
+  "128": {
+    "n_cw": 5000,
+    "errs_u": 397,
+    "errs_v": 396,
+    "errs_total": 406,
+    "bler_u": 0.0794,
+    "bler_v": 0.0792,
+    "bler_total": 0.0812
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "N64": {
+    "N": 64,
+    "d": 16,
+    "hidden": 100,
+    "encoder": "bigru",
+    "ku": 15,
+    "kv": 29,
+    "iters": 200000,
+    "n_params": 84970,
+    "s1_best_bler": 0.03,
+    "s2_best_bler_trueU": 0.0,
+    "chained": {
+      "n_cw": 5000,
+      "errs_u": 157,
+      "errs_v": 161,
+      "errs_total": 161,
+      "bler_u": 0.0314,
+      "bler_v": 0.0322,
+      "bler_total": 0.0322
+    },
+    "s1_time_min": 126.84355048735937,
+    "s2_time_min": 31.57009028196335
+  },
+  "N128": {
+    "N": 128,
+    "d": 16,
+    "hidden": 100,
+    "encoder": "bigru",
+    "ku": 30,
+    "kv": 58,
+    "iters": 200000,
+    "n_params": 84970,
+    "s1_best_bler": 0.056666666666666664,
+    "s2_best_bler_trueU": 0.0,
+    "chained": {
+      "n_cw": 5000,
+      "errs_u": 397,
+      "errs_v": 396,
+      "errs_total": 406,
+      "bler_u": 0.0794,
+      "bler_v": 0.0792,
+      "bler_total": 0.0812
+    },
+    "s1_time_min": 267.8447817166646,
+    "s2_time_min": 66.27500533262888
+  }
+}

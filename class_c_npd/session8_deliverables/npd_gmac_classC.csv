@@ -1,0 +1,9 @@
+N,ku,kv,SC_BLER,NPD_BLER,Ratio,Source
+16,4,7,0.163,0.111,0.68,prior
+32,7,15,0.068,0.038,0.56,prior
+64,15,29,0.027,0.017,0.63,prior
+128,30,58,0.005,0.007,1.4,prior
+256,59,117,0.002,0.0016,0.8,prior
+256,59,117,0.002,0.23,Stage1 only,session8_curriculum
+512,119,233,0.0008,0.88,Stage1 only,session8_curriculum
+1024,238,467,0.0002,0.976,Stage1 only,session8_curriculum

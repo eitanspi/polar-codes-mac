@@ -1,0 +1,12 @@
+{
+  "N": 512,
+  "n_cw": 2000,
+  "ku": 119,
+  "kv": 233,
+  "bler_total": 0.0025,
+  "bler_u": 0.0015,
+  "bler_v": 0.002,
+  "errs_total": 5,
+  "errs_u": 3,
+  "errs_v": 4
+}

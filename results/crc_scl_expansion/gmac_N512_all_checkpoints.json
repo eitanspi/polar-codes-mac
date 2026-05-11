@@ -1,0 +1,27 @@
+{
+  "ncg_gmac_mlp_N512.pt": {
+    "bler": 0.068,
+    "n_cw": 500,
+    "time_s": 21.8
+  },
+  "campaign_n512_best.pt": {
+    "bler": 0.02,
+    "n_cw": 500,
+    "time_s": 22.1
+  },
+  "campaign_n512_latest.pt": {
+    "bler": 0.022,
+    "n_cw": 500,
+    "time_s": 22.0
+  },
+  "n512_long_best.pt": {
+    "bler": 0.014,
+    "n_cw": 500,
+    "time_s": 21.2
+  },
+  "n512_long_latest.pt": {
+    "bler": 0.01,
+    "n_cw": 500,
+    "time_s": 21.1
+  }
+}

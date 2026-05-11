@@ -1,0 +1,52 @@
+{
+  "N": 256,
+  "ku": 123,
+  "kv": 123,
+  "snr_db": 6.0,
+  "pairs": [
+    {
+      "m1": "ncg_gmac_mlp_N256.pt",
+      "m2": "campaign_n256_sched_best.pt",
+      "bler_m1": 0.021,
+      "bler_m2": 0.013,
+      "bler_oracle_either": 0.012,
+      "n_cw": 1000,
+      "time_s": 18.6
+    },
+    {
+      "m1": "ncg_gmac_mlp_N256.pt",
+      "m2": "n256_long_best.pt",
+      "bler_m1": 0.018,
+      "bler_m2": 0.011,
+      "bler_oracle_either": 0.008,
+      "n_cw": 1000,
+      "time_s": 19.8
+    },
+    {
+      "m1": "campaign_n256_sched_best.pt",
+      "m2": "n256_long_best.pt",
+      "bler_m1": 0.016,
+      "bler_m2": 0.022,
+      "bler_oracle_either": 0.015,
+      "n_cw": 1000,
+      "time_s": 20.4
+    }
+  ],
+  "single_models": {
+    "ncg_gmac_mlp_N256.pt": {
+      "bler": 0.026,
+      "n_cw": 1000,
+      "time_s": 8.3
+    },
+    "campaign_n256_sched_best.pt": {
+      "bler": 0.014,
+      "n_cw": 1000,
+      "time_s": 8.5
+    },
+    "n256_long_best.pt": {
+      "bler": 0.021,
+      "n_cw": 1000,
+      "time_s": 8.8
+    }
+  }
+}
