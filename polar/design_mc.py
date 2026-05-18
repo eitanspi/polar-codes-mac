@@ -143,7 +143,7 @@ def _genie_decode_single(N, z, b, u_true, v_true, channel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def mc_design(n, channel, mc_trials=1000, seed=None, verbose=True,
-              time_budget=None, path_i=None):
+              time_budget=None, path_i=None, b=None):
     """
     Estimate per-bit error probabilities via genie-aided SC Monte Carlo.
 
@@ -166,9 +166,10 @@ def mc_design(n, channel, mc_trials=1000, seed=None, verbose=True,
     sorted_v      : np.ndarray (N,) — V channel indices, best first
     """
     N = 1 << n
-    if path_i is None:
-        path_i = N
-    b = make_path(N, path_i)
+    if b is None:
+        if path_i is None:
+            path_i = N
+        b = make_path(N, path_i)
     rng = np.random.default_rng(seed)
 
     u_err_counts = np.zeros(N, dtype=np.float64)

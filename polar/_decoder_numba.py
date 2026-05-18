@@ -235,7 +235,8 @@ def _W_joint(N, i, j, z_tree, level, block_idx,
 def _coord_prob_u_log(N, i, j, z_tree, u_hat, v_hat, u_test, channel, cache):
     """log P(u_i = u_test | z^N, û^{i-1}, v̂^j)."""
     u_arr = np.empty(i, dtype=np.int8)
-    u_arr[:i - 1] = u_hat[1:i]
+    for k in range(1, i):
+        u_arr[k - 1] = u_hat[k]
     u_arr[i - 1] = u_test
 
     if j == 0:
@@ -244,14 +245,16 @@ def _coord_prob_u_log(N, i, j, z_tree, u_hat, v_hat, u_test, channel, cache):
         return _LOG_05 + _logaddexp(lw0, lw1)
     else:
         v_arr = np.empty(j, dtype=np.int8)
-        v_arr[:j] = v_hat[1:j + 1]
+        for k in range(1, j + 1):
+            v_arr[k - 1] = v_hat[k]
         return _LOG_05 + _W_joint_log(N, i, j, z_tree, 0, 0, u_arr, v_arr, channel, cache)
 
 
 def _coord_prob_v_log(N, i, j, z_tree, u_hat, v_hat, v_test, channel, cache):
     """log P(v_j = v_test | z^N, û^i, v̂^{j-1})."""
     v_arr = np.empty(j, dtype=np.int8)
-    v_arr[:j - 1] = v_hat[1:j]
+    for k in range(1, j):
+        v_arr[k - 1] = v_hat[k]
     v_arr[j - 1] = v_test
 
     if i == 0:
@@ -260,14 +263,16 @@ def _coord_prob_v_log(N, i, j, z_tree, u_hat, v_hat, v_test, channel, cache):
         return _LOG_05 + _logaddexp(lw0, lw1)
     else:
         u_arr = np.empty(i, dtype=np.int8)
-        u_arr[:i] = u_hat[1:i + 1]
+        for k in range(1, i + 1):
+            u_arr[k - 1] = u_hat[k]
         return _LOG_05 + _W_joint_log(N, i, j, z_tree, 0, 0, u_arr, v_arr, channel, cache)
 
 
 def _coord_prob_u(N, i, j, z_tree, u_hat, v_hat, u_test, channel, cache):
     """Linear-domain P(u_i = u_test | ...)."""
     u_arr = np.empty(i, dtype=np.int8)
-    u_arr[:i - 1] = u_hat[1:i]
+    for k in range(1, i):
+        u_arr[k - 1] = u_hat[k]
     u_arr[i - 1] = u_test
 
     if j == 0:
@@ -275,14 +280,16 @@ def _coord_prob_u(N, i, j, z_tree, u_hat, v_hat, u_test, channel, cache):
                0.5 * _W_joint(N, i, 1, z_tree, 0, 0, u_arr, _ARR_1, channel, cache)
     else:
         v_arr = np.empty(j, dtype=np.int8)
-        v_arr[:j] = v_hat[1:j + 1]
+        for k in range(1, j + 1):
+            v_arr[k - 1] = v_hat[k]
         return 0.5 * _W_joint(N, i, j, z_tree, 0, 0, u_arr, v_arr, channel, cache)
 
 
 def _coord_prob_v(N, i, j, z_tree, u_hat, v_hat, v_test, channel, cache):
     """Linear-domain P(v_j = v_test | ...)."""
     v_arr = np.empty(j, dtype=np.int8)
-    v_arr[:j - 1] = v_hat[1:j]
+    for k in range(1, j):
+        v_arr[k - 1] = v_hat[k]
     v_arr[j - 1] = v_test
 
     if i == 0:
@@ -290,7 +297,8 @@ def _coord_prob_v(N, i, j, z_tree, u_hat, v_hat, v_test, channel, cache):
                0.5 * _W_joint(N, 1, j, z_tree, 0, 0, _ARR_1, v_arr, channel, cache)
     else:
         u_arr = np.empty(i, dtype=np.int8)
-        u_arr[:i] = u_hat[1:i + 1]
+        for k in range(1, i + 1):
+            u_arr[k - 1] = u_hat[k]
         return 0.5 * _W_joint(N, i, j, z_tree, 0, 0, u_arr, v_arr, channel, cache)
 
 
