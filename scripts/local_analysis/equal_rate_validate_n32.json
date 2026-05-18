@@ -1,0 +1,15 @@
+{
+  "sct": {
+    "bler": 0.2798,
+    "errs": 1399,
+    "n_cw": 5000,
+    "done": true
+  },
+  "ncg": {
+    "bler": 0.2776,
+    "errs": 1388,
+    "n_cw": 5000,
+    "iters": 40000,
+    "done": true
+  }
+}

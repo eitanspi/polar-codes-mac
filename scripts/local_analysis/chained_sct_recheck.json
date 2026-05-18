@@ -1,0 +1,94 @@
+{
+  "128": {
+    "N": 128,
+    "ku": 30,
+    "kv": 58,
+    "info_set_diff_U": {
+      "common": 30,
+      "only_in_gmac": [],
+      "only_in_own": []
+    },
+    "info_set_diff_V": {
+      "common": 56,
+      "only_in_gmac": [
+        82,
+        98
+      ],
+      "only_in_own": [
+        107,
+        115
+      ]
+    },
+    "gmac_design_10K": {
+      "label": "GMAC",
+      "bler_chained": 0.0266,
+      "errs": 266,
+      "bler_u": 0.0263,
+      "errs_u": 263,
+      "bler_v": 0.0216,
+      "errs_v": 216,
+      "n_cw": 10000,
+      "elapsed_s": 12.68476414680481
+    },
+    "own_design_10K": {
+      "bler_chained": 0.0222,
+      "bler_u": 0.0222,
+      "bler_v": 0.0201,
+      "errs_chained": 222,
+      "errs_u": 222,
+      "errs_v": 201,
+      "n_cw": 10000,
+      "elapsed_s": 13.733796119689941
+    }
+  },
+  "256": {
+    "N": 256,
+    "ku": 59,
+    "kv": 117,
+    "info_set_diff_U": {
+      "common": 57,
+      "only_in_gmac": [
+        182,
+        204
+      ],
+      "only_in_own": [
+        233,
+        241
+      ]
+    },
+    "info_set_diff_V": {
+      "common": 114,
+      "only_in_gmac": [
+        40,
+        103,
+        162
+      ],
+      "only_in_own": [
+        28,
+        44,
+        52
+      ]
+    },
+    "gmac_design_10K": {
+      "label": "GMAC",
+      "bler_chained": 0.0076,
+      "errs": 76,
+      "bler_u": 0.0072,
+      "errs_u": 72,
+      "bler_v": 0.0075,
+      "errs_v": 75,
+      "n_cw": 10000,
+      "elapsed_s": 28.637055158615112
+    },
+    "own_design_10K": {
+      "bler_chained": 0.0074,
+      "bler_u": 0.0074,
+      "bler_v": 0.0056,
+      "errs_chained": 74,
+      "errs_u": 74,
+      "errs_v": 56,
+      "n_cw": 10000,
+      "elapsed_s": 30.753654956817627
+    }
+  }
+}
