@@ -1,0 +1,332 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\bbY}{Y}
+\newcommand{\bbS}{S}
+\newcommand{\bbU}{U}
+\newcommand{\bbX}{X}
+\newcommand{\bbZ}{Z}
+\newcommand{\bbV}{V}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\BigOh}{\mathcal{O}}
+
+\title{From Single-User SC Trellis Decoding to a Two-User MAC \\
+       Successive Cancellation Trellis (SCT) Decoder}
+\author{Polar Codes for MAC Project --- Implementation Notes}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We summarise the single-user successive cancellation (SC) trellis decoder of
+Wang, Honda, Yamamoto, Liu and Hou (ITW 2015) for polar codes over
+finite-state channels with memory, and then derive its two-user
+multiple-access channel (MAC) extension by composing it with the monotone
+chain rule decomposition of \"{O}nay (ISIT 2013).  The two-user version is
+the \emph{SCT decoder} used as the analytical baseline in our project.  We
+state the recursive formulas, give a one-paragraph justification of why they
+are correct, and describe how the algorithm is realised in our repository.
+\end{abstract}
+
+%-----------------------------------------------------------------------------
+\section{Setting}
+
+A discrete finite-state channel is specified by
+\[
+  W\bigl(y_i, s_i \mid x_i, s_{i-1}\bigr),
+\]
+where $x_i \in \mathcal{X}=\{0,1\}$ is the input, $y_i \in \mathcal{Y}$ the
+output, and $s_i \in \mathcal{S}$ a finite hidden state evolving in time.
+The state at time $0$ is known (say $s_0$).  Memoryless channels are the
+special case $|\mathcal{S}|=1$.
+
+\paragraph{Polar transform.}
+Let $\mathbf{G}_N = G^{\otimes n}$ with $G=\begin{psmallmatrix}1&0\\1&1\end{psmallmatrix}$,
+$N=2^n$.  The input is $\bbX_1^N = \bbU_1^N \mathbf{G}_N$; SC decoding aims to recover
+$\bbU_1^N$ from $\bbY_1^N$.  S\c{a}so\u{g}lu (2011) showed that the polar
+transform polarises finite-state channels in exactly the same way it
+polarises B-DMCs.  What is needed in practice is a \emph{decoder} that runs
+in time polynomial in $|\mathcal{S}|$ and $N$.
+
+%-----------------------------------------------------------------------------
+\section{Single-User SCT (Wang/Honda/Yamamoto/Liu/Hou, ITW 2015)}
+
+\subsection{Augmented joint probability}
+
+For memoryless channels the SC decoder uses
+\[
+  W_N^{(i)}\bigl(y_1^N, u_1^i\bigr) := P\bigl(\bbY_1^N=y_1^N, \bbU_1^i=u_1^i\bigr),
+\]
+which factorises along the polar tree.  With memory this no longer
+factorises because the channel has correlated past and future.  The paper's
+key idea is to add the \emph{boundary states} $s_0, s_N$ to the conditioning:
+\begin{equation}\label{eq:augmented}
+  W_N^{(i)}\bigl(y_1^N, u_1^i, s_N \,\big|\, s_0\bigr)
+  := P\bigl(\bbY_1^N=y_1^N,\; \bbU_1^i=u_1^i,\; \bbS_N=s_N \,\big|\, \bbS_0=s_0\bigr).
+\end{equation}
+Conditioning on the entry state $s_0$ and pinning the exit state $s_N$ makes the
+augmented quantity factor cleanly over a half-block, because everything
+before $s_N$ is conditionally independent of everything after it given $s_N$.
+
+\subsection{Recursive formulas}
+
+The paper proves (Theorem 2 in \cite{Wang2015}) that for $N=2^n$,
+$1 \le i \le N$,
+\begin{align}
+  W_{2N}^{(2i-1)}\bigl(y_1^{2N}, u_1^{2i-1}, s_{2N} \mid s_0\bigr)
+  &= \sum_{s_N}\sum_{u_{2i}}
+     W_N^{(i)}\bigl(y_1^N,\; u_{1,o}^{2i}\oplus u_{1,e}^{2i},\; s_N \mid s_0\bigr)
+     \;\cdot\; \nonumber\\
+  &\hspace{2.4cm}
+     W_N^{(i)}\bigl(y_{N+1}^{2N},\; u_{1,e}^{2i},\; s_{2N}\mid s_N\bigr),
+     \label{eq:su-odd}\\[4pt]
+  W_{2N}^{(2i)}\bigl(y_1^{2N}, u_1^{2i}, s_{2N} \mid s_0\bigr)
+  &= \sum_{s_N}
+     W_N^{(i)}\bigl(y_1^N,\; u_{1,o}^{2i}\oplus u_{1,e}^{2i},\; s_N \mid s_0\bigr)
+     \;\cdot\; \nonumber\\
+  &\hspace{2.4cm}
+     W_N^{(i)}\bigl(y_{N+1}^{2N},\; u_{1,e}^{2i},\; s_{2N}\mid s_N\bigr).
+     \label{eq:su-even}
+\end{align}
+Here $u_{1,o}^{2i}$ and $u_{1,e}^{2i}$ are the odd- and even-indexed
+sub-sequences of $u_1^{2i}$ --- the standard polar split.
+
+\subsection{Why the recursion is correct}
+
+The argument has three ingredients:
+\begin{enumerate}[leftmargin=*]
+\item The polar transform splits $u_1^{2i}$ into
+      $\bigl(u_{1,o}\oplus u_{1,e}\bigr) \mathbf{G}_N$ in the first half-block and
+      $u_{1,e}\mathbf{G}_N$ in the second --- exactly as for memoryless channels.
+\item Conditional on $s_N$, the past $\bigl(\bbY_1^N, \bbX_1^N, s_0\bigr)$
+      is independent of the future $\bigl(\bbY_{N+1}^{2N}, \bbX_{N+1}^{2N}, s_{2N}\bigr)$.
+      So the joint factorises, and the two half-blocks each contribute a
+      single $W_N^{(i)}$ term.
+\item The difference between the odd index ($2i-1$) and the even index
+      ($2i$) is exactly Arikan's split: the odd case still has to marginalise
+      $u_{2i}$, the even case has already absorbed it.
+\end{enumerate}
+Bringing those together gives \eqref{eq:su-odd}--\eqref{eq:su-even}.  All
+inner steps reduce to ordinary marginalisation.
+
+\subsection{Complexity}
+
+The recursion is the same polar tree as the memoryless case, but at each of
+the $\BigOh(N\log N)$ steps it must sum over $|\mathcal{S}|$ choices of
+$s_N$ and store a value for every $(s_0, s_N) \in \mathcal{S}^2$.  Total
+cost $\BigOh\bigl(|\mathcal{S}|^3 N \log N\bigr)$.  For ISI with a 1-tap
+state, $|\mathcal{S}|=2$, so this stays $\BigOh(N\log N)$ up to constants.
+
+\subsection{Recovering the per-bit posterior}
+
+The decoder needs the posterior $P\bigl(\bbU_i \mid \bbU_1^{i-1}, \bbY_1^N\bigr)$.
+From $W_N^{(i)}$ the joint probability
+$P(\bbY_1^N, \bbU_1^i)$ is obtained by averaging over the boundary states,
+\begin{equation}\label{eq:marginal}
+  P\bigl(\bbY_1^N=y_1^N,\; \bbU_1^i=u_1^i\bigr)
+  = \sum_{s_0,\,s_N} W_N^{(i)}(y_1^N, u_1^i, s_N\mid s_0)\;P(\bbS_0=s_0),
+\end{equation}
+and the SC decision rule is the usual $\hat{u}_i = \arg\max_{u_i}
+P(\bbY_1^N, \bbU_1^{i-1}\hat{u}_1^{i-1}, u_i)$.
+
+%-----------------------------------------------------------------------------
+\section{Lifting to the Two-User MAC}\label{sec:lift}
+
+\subsection{Two-user MAC setting}
+
+A two-user binary-input MAC with memory has transition law
+\[
+  W\bigl(z_i, s_i \mid x_i, y_i, s_{i-1}\bigr),
+\]
+where $x_i$ and $y_i$ are the two users' inputs, $z_i$ the joint output, and
+$s_i$ the channel state.  The state $s_i$ now generally has to encode all
+information needed to predict the next output.  For the ISI--MAC
+\[
+  Z_i = (1-2X_i) + (1-2Y_i) + h\bigl[(1-2X_{i-1}) + (1-2Y_{i-1})\bigr] + W_i,
+  \qquad W_i\sim\mathcal{N}(0,\sigma^2),
+\]
+the natural state is $s_i = (X_{i-1}, Y_{i-1}) \in \{0,1\}^2$, so
+$|\mathcal{S}| = 4$.  Inputs are independent uniform: $P_{X}(0)=P_{X}(1)=
+P_{Y}(0)=P_{Y}(1)=\tfrac{1}{2}$.
+
+\subsection{\"{O}nay's monotone-chain decomposition (ISIT 2013)}
+
+Let $\bbU^N$ and $\bbV^N$ be the polar pre-codewords for the two users.
+\"{O}nay~\cite{Onay2013} expands $I(\bbZ^N;\bbU^N,\bbV^N)$ along a
+\emph{monotone chain rule path} $b^{2N}\in\{0,1\}^{2N}$: a $0$ at step $k$
+emits an extra $\bbU$ symbol, a $1$ emits an extra $\bbV$ symbol.  Each
+monotone path produces a sequence of \emph{coordinate channels}
+$W_N^{(b_k,i,j)}$, $k=i+j$, that are single-user binary-input channels
+(eq.~(8) of \cite{Onay2013}):
+\begin{equation}\label{eq:onay-coord}
+  W_N^{(b_k,i,j)}(z^N, s^{k-1} \mid s_k)
+  =\begin{cases}
+     W_N^{(0,i,j)}(z^N, u^{i-1}, v^j \mid u_i) & \text{if } b_k=0,\\
+     W_N^{(1,i,j)}(z^N, u^i, v^{j-1} \mid v_j) & \text{if } b_k=1,
+   \end{cases}
+\end{equation}
+and these polarise (capacity terms go to $0$ or $1$) for every monotone
+path. The decoder works through $k=1,\ldots,2N$ deciding one bit at a step,
+of user-1 if $b_k=0$ or user-2 if $b_k=1$.  In particular:
+\begin{itemize}
+\item $b^{2N}=0^N 1^N$ is the \emph{corner-rate Class C} path:
+      decode all of $\bbU$ first treating $\bbV$ as i.i.d.\ noise, then all
+      of $\bbV$ conditioned on the just-decoded $\hat{\bbX} = \hat{\bbU}\mathbf{G}_N$.
+\item Other paths give intermediate rate splits and reach the dominant face
+      of the MAC capacity region with arbitrary precision.
+\end{itemize}
+\"{O}nay's recursive formulas (his eqs.~(16)--(19)) are simply the same polar
+recursion as in the single-user case, but they propagate the four-type
+coordinate channels $W_N^{(b_k,i,j)}$ instead of one type.
+
+\subsection{Composition with the state-lattice trick}
+
+Both \"{O}nay's MAC SC and Wang/Honda et al.'s state-lattice SC use exactly
+the same polar split.  The composition is therefore straightforward:
+augment \"{O}nay's coordinate channels with the boundary states $(s_0, s_N)$
+exactly as in \eqref{eq:augmented}.  Define
+\begin{equation}\label{eq:mac-augmented}
+  W_N^{(b_k,i,j)}\bigl(z_1^N, u^{i-1}\text{ or }u^i,\; v^{j-1}\text{ or }v^j,\;
+                        s_N \,\big|\, u_i \text{ or } v_j,\; s_0\bigr),
+\end{equation}
+keeping all four \"{O}nay types $b_k=0$ vs $b_k=1$, even vs odd index.  The
+recursion for each type takes exactly the same shape as the single-user
+SCT recursion \eqref{eq:su-odd}--\eqref{eq:su-even}: a sum over the
+shared boundary state $s_N$ inside the product of two half-block factors.
+For example, the analogue of \eqref{eq:su-odd} for an odd-index
+$b_k=0$ ($\bbU$) step is
+\begin{align}
+   &W_{2N}^{(0, 2i-1, 2j)}\bigl(z_1^{2N}, u_1^{2i-2}, v_1^{2j},\; s_{2N} \,\big|\, u_{2i-1},\; s_0\bigr) \nonumber\\
+  &\hspace{1.2cm} = \frac{1}{2^2}\sum_{s_N}\;\sum_{u_{2i}, v_{2j-1}, v_{2j}}\;
+        W_N^{(0,i,j)}\bigl(z_1^N,\, \tilde u^{i-1},\, \tilde v^{j},\, s_N \,\big|\, \bar u_i,\, s_0\bigr) \nonumber\\
+  &\hspace{4.8cm}\cdot
+        W_N^{(0,i,j)}\bigl(z_{N+1}^{2N},\, \bar u^{i-1},\, \bar v^{j},\, s_{2N} \,\big|\, \bar u_i,\, s_N\bigr),
+   \label{eq:mac-recursion}
+\end{align}
+where $\tilde u = u_{1,o}\oplus u_{1,e}$, $\bar u = u_{1,e}$ and similarly
+for $\tilde v$, $\bar v$.  Three other shape-equivalent identities cover the
+$(b_k, \mathrm{odd/even})\in\{0,1\}\times\{\text{odd,even}\}$ cases; they
+are the natural composition of \"{O}nay's eqs.~(16)--(19) with the
+state-summation of \eqref{eq:su-odd}--\eqref{eq:su-even}.  No new
+information-theoretic argument is needed beyond:
+\begin{enumerate}[leftmargin=*]
+\item the polar split applies to $u$ and $v$ separately (\"{O}nay), and
+\item conditional on $s_N$, the past and future of the channel are
+      independent (Wang/Honda).
+\end{enumerate}
+
+\subsection{Complexity}
+
+Each step of the recursion for the MAC version sums over $|\mathcal{S}|$
+choices of $s_N$ and stores a table indexed by $(s_0, s_N)$, exactly as
+single-user.  Thus the cost remains
+\(\BigOh(|\mathcal{S}|^3 N \log N)\).
+For ISI--MAC, $|\mathcal{S}|=4$ and the algorithm runs in
+$\BigOh(64\, N\log N) = \BigOh(N\log N)$.
+
+%-----------------------------------------------------------------------------
+\section{Corner-Rate Specialisation and Equivalent Two-Stage Form}
+
+For the corner-rate path $b^{2N}=0^N 1^N$, all $\bbU$ steps come before any
+$\bbV$ step.  The recursion \eqref{eq:mac-recursion} simplifies because, in
+the $\bbU$ phase, each MAC coordinate channel $W^{(0,i,j)}$ with $j=N$
+\emph{marginalises} $\bbV$ as uniform i.i.d.: the joint channel
+$W(z\mid x,y)$ is replaced by its $\bbV$-averaged version
+\(
+   \tilde W(z\mid x) = \tfrac{1}{2}\sum_y W(z\mid x, y).
+\)
+Equivalently, the entire $\bbU$ phase can be implemented in two steps:
+\begin{enumerate}[leftmargin=*]
+\item[\textbf{(a)}] Compute the per-position marginal
+      $\log P(z_t \mid x_t)$ from \emph{joint} forward--backward on the
+      $|\mathcal{S}|$-state trellis with i.i.d.\ uniform $\bbY$.  This
+      produces a scalar LLR $\ell^{(u)}_t$ for each position.
+\item[\textbf{(b)}] Run \emph{ordinary} Arikan SC on $\ell^{(u)}_1, \ldots,
+      \ell^{(u)}_N$ to decide $\hat{\bbU}$.
+\end{enumerate}
+For stage 2, condition on $\hat{\bbX} = \hat{\bbU}\mathbf{G}_N$: now both $X_t$ and
+$X_{t-1}$ are known, so the state collapses to $s_t = Y_{t-1}$, a 2-state
+chain.  Run a 2-state FB to obtain a scalar LLR $\ell^{(v)}_t$ and
+ordinary Arikan SC for $\hat{\bbV}$.  This is the version used in the
+project; it is mathematically equivalent to \eqref{eq:mac-recursion}
+specialised to $b^{2N}=0^N 1^N$.
+
+%-----------------------------------------------------------------------------
+\section{Realisation in the Project}
+
+Two implementations follow the development above; both are validated to
+agree within Monte-Carlo noise across $N\in\{16,\ldots,1024\}$:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{polar/decoder\_trellis.py} (\emph{joint MAC SCT}): builds the
+  4-state leaf tensor for ISI--MAC, runs a single \texttt{forward-backward}
+  on the full $|\mathcal{S}|=4$ lattice, and feeds the resulting
+  $(N,2,2)$ per-position marginals into a Ren-style computational-graph
+  two-user MAC SC tree.  Supports any monotone path $b^{2N}$ via
+  \texttt{polar/decoder\_interleaved.py}.
+
+\item \texttt{scripts/local\_analysis/chained\_sct\_4state.py} (\emph{4-state
+  chained corner-rate}): the two-stage form of Section 4 above.  Stage 1
+  uses the same 4-state FB but marginalises $\bbY$ per position to obtain
+  scalar U-LLRs, then runs Arikan SC.  Stage 2 conditions on $\hat{\bbX}$
+  and runs a 2-state $Y_{t-1}$ FB followed by Arikan SC.  This decoder is
+  the primary analytical baseline we plot against the neural decoders.
+\end{itemize}
+
+\paragraph{Numerical sanity.}  At ISI--MAC with $h=0.3$, SNR $=6$ dB,
+corner-rate path, the 4-state chained SCT matches NPD within
+Monte-Carlo noise at every $N\in\{16,\ldots,1024\}$ once the MC
+genie-aided design uses $\ge 50{,}000$ trials per $N$ (and
+$\ge 200{,}000$ at $N=1024$ to resolve the long reliability tail).
+
+%-----------------------------------------------------------------------------
+\section{Summary}
+
+\begin{itemize}[leftmargin=*]
+\item The single-user SCT of Wang/Honda/Yamamoto/Liu/Hou (2015) generalises
+      Arikan SC to finite-state channels by adding the boundary states
+      $(s_0, s_N)$ to every polar-tree intermediate quantity, see
+      \eqref{eq:augmented}.  The polar-tree recursion is unchanged in form
+      \eqref{eq:su-odd}--\eqref{eq:su-even}; only an extra sum over $s_N$ is
+      added at each step.
+\item \"{O}nay (2013) showed that any monotone chain rule expansion of
+      $I(Z; U, V)$ gives a polar code reaching every point on the dominant
+      face of the MAC capacity region.  His decoder is the same polar-tree
+      recursion as single-user SC, applied to the four coordinate channels.
+\item Composing the two is mechanical: take \"{O}nay's recursions for the
+      four coordinate-channel types, augment each by $(s_0, s_N)$ and add a
+      sum over $s_N$ at every composition --- exactly as in Wang/Honda et
+      al.  The result is the two-user MAC SCT used in the project,
+      complexity $\BigOh(|\mathcal{S}|^3 N \log N)$.
+\item For the corner-rate path $b^{2N}=0^N 1^N$, the algorithm specialises
+      to the two-stage form ``state-lattice FB $\to$ scalar LLR $\to$
+      Arikan SC'', which is what we implement and use as our analytical
+      baseline against the NPD and NCG decoders.
+\end{itemize}
+
+\begin{thebibliography}{9}
+\bibitem{Wang2015}
+R.~Wang, J.~Honda, H.~Yamamoto, R.~Liu and Y.~Hou,
+``Construction of Polar Codes for Channels with Memory,''
+\emph{Proc.\ IEEE Information Theory Workshop (ITW), Fall 2015}, pp.~187--191.
+\bibitem{Onay2013}
+S.~\"{O}nay,
+``Successive Cancellation Decoding of Polar Codes for the Two-User Binary-Input MAC,''
+\emph{Proc.\ IEEE Int.\ Symp.\ Inform.\ Theory (ISIT)}, 2013, pp.~1122--1126.
+\bibitem{Sasoglu2011}
+E.~\c{S}a\c{s}o\u{g}lu,
+``Polarization in the Presence of Memory,''
+\emph{Proc.\ IEEE ISIT}, 2011, pp.~189--193.
+\end{thebibliography}
+
+\end{document}
