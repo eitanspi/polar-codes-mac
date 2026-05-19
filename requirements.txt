@@ -1,4 +1,5 @@
-numpy
-matplotlib
-torch
-numba
+numpy>=1.24
+scipy>=1.11
+matplotlib>=3.7
+torch>=2.1
+numba>=0.58
